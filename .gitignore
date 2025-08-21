@@ -1,0 +1,33 @@
+# Node / Composer
+node_modules/
+vendor/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# PHP sessions / temp
+sessions/
+*.session
+
+# Local config
+config.php
+
+# Debug / generated
+debug_*.php
+*_fixed.php
+*_new.php
+prepare_for_github.php
+create_test_giver.php
+inspect_users.php
+
+# Database dumps (if you create one locally)
+*.sql
+
+# Logs
+logs/
+*.log
