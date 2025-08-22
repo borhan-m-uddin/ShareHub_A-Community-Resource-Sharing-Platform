@@ -2,18 +2,53 @@
 // Build small showcases for latest items and services
 $latest_items = [];
 $latest_services = [];
-// Safe queries using small limits; ignore if tables missing
+
+// Helpers: format big numbers like 1200 -> 1.2k+
+function format_count_display(int $n): string {
+    if ($n >= 1000000) return round($n / 1000000, 1) . 'M+';
+    if ($n >= 1000) return round($n / 1000, 1) . 'k+';
+    return (string)$n;
+}
+
+// Safe queries using small limits; try to fetch live counts and latest rows
 try {
+    // latest items
     $items_q = $conn->query("SELECT item_id, title, description, posting_date FROM items WHERE availability_status='available' ORDER BY posting_date DESC LIMIT 6");
     if ($items_q) {
         while ($r = $items_q->fetch_assoc()) $latest_items[] = $r;
     }
+
+    // latest services
     $services_q = $conn->query("SELECT service_id, title, description, posting_date FROM services WHERE availability='available' ORDER BY posting_date DESC LIMIT 6");
     if ($services_q) {
         while ($r = $services_q->fetch_assoc()) $latest_services[] = $r;
     }
+
+    // live counts (use simple COUNT queries)
+    $items_count = 0;
+    $services_count = 0;
+    $users_count = 0;
+
+    $c1 = $conn->query("SELECT COUNT(*) AS c FROM items WHERE availability_status='available'");
+    if ($c1 && ($row = $c1->fetch_assoc())) $items_count = (int)$row['c'];
+
+    $c2 = $conn->query("SELECT COUNT(*) AS c FROM services WHERE availability='available'");
+    if ($c2 && ($row = $c2->fetch_assoc())) $services_count = (int)$row['c'];
+
+    // count active users (status = 1) as community members
+    $c3 = $conn->query("SELECT COUNT(*) AS c FROM users WHERE status = 1");
+    if ($c3 && ($row = $c3->fetch_assoc())) $users_count = (int)$row['c'];
+
+    // Fallbacks: if counts are zero (table missing or empty), keep the previous heuristics
+    $items_display = $items_count > 0 ? format_count_display($items_count) : format_count_display(count($latest_items) + 120);
+    $services_display = $services_count > 0 ? format_count_display($services_count) : format_count_display(count($latest_services) + 40);
+    $users_display = $users_count > 0 ? format_count_display($users_count) : '1.2k+';
+
 } catch (Exception $e) {
-    // ignore DB errors here — page should still render
+    // ignore DB errors here — page should still render with reasonable defaults
+    $items_display = format_count_display(count($latest_items) + 120);
+    $services_display = format_count_display(count($latest_services) + 40);
+    $users_display = '1.2k+';
 }
 ?>
 <!DOCTYPE html>
