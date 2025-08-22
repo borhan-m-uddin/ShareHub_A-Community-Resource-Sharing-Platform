@@ -2,6 +2,7 @@
 require_once "config.php";
 
 $username = $password = $confirm_password = $email = "";
+$role = 'seeker';
 $username_err = $password_err = $confirm_password_err = $email_err = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -89,6 +90,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
+    // Determine requested role (seeker or giver)
+    if (isset($_POST['role']) && in_array($_POST['role'], ['seeker', 'giver'])) {
+        $role = $_POST['role'];
+    } else {
+        $role = 'seeker';
+    }
+
     // Check input errors before inserting in database
     if (empty($username_err) && empty($email_err) && empty($password_err) && empty($confirm_password_err)) {
 
@@ -103,7 +111,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $param_username = $username;
             $param_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
             $param_email = $email;
-            $param_role = "seeker"; // Default role for new registrations
+            $param_role = $role; // Use selected role from the form (seeker or giver)
 
             // Attempt to execute the prepared statement
             if ($stmt->execute()) {
@@ -153,6 +161,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <label>Confirm Password</label>
                 <input type="password" name="confirm_password" class="form-control" value="<?php echo $confirm_password; ?>">
                 <span class="help-block"><?php echo $confirm_password_err; ?></span>
+            </div>
+            <div class="form-group">
+                <label>Register as</label>
+                <div>
+                    <label><input type="radio" name="role" value="seeker" <?php echo ($role === 'seeker') ? 'checked' : ''; ?>> Seeker</label>
+                    &nbsp;&nbsp;
+                    <label><input type="radio" name="role" value="giver" <?php echo ($role === 'giver') ? 'checked' : ''; ?>> Giver</label>
+                </div>
             </div>
             <div class="form-group">
                 <input type="submit" class="btn btn-primary" value="Submit">
