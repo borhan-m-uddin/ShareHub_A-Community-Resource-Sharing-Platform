@@ -25,8 +25,9 @@ prepare_for_github.php
 create_test_giver.php
 inspect_users.php
 
-# Database dumps (if you create one locally)
-*.sql
+# Database dumps (if you create one locally) — keep only local dumps folder ignored
+# Ignore the dumps folder so we can keep a local copy but not commit it
+dumps/*.sql
 
 # Logs
 logs/
