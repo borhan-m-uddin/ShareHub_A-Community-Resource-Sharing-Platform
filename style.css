@@ -89,4 +89,28 @@ a:hover { text-decoration:underline; }
 /* small helper to reuse old login styles if pages use .card-centered */
 .card-centered .wrapper { box-shadow:none; }
 
+/* Site header */
+.site-header { background: #fff; border-bottom: 1px solid #eef2f7; }
+.site-header .container { max-width:1100px; margin:0 auto; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; }
+.brand { display:flex; align-items:center; gap:12px; }
+.site-logo { width:48px; height:48px; display:block; }
+.brand-title { font-size:1.25rem; font-weight:800; color:#0f172a; }
+.brand-sub { font-size:0.85rem; color:#6b7280; margin-top:2px; }
+.site-nav a { margin-left:12px; color:#0f172a; font-weight:600; text-decoration:none; }
+.site-nav a:hover { color:#2563eb; }
+
+.main-content { max-width:1100px; margin:24px auto; padding:0 24px; box-sizing:border-box; }
+
+/* Improve wrapper spacing when header is present */
+.wrapper { margin-top:12px; }
+
+/* Brand banner used on simple pages */
+.brand-banner { display:flex; align-items:center; gap:12px; padding:18px 0; }
+.brand-banner-logo { width:56px; height:56px; display:block; }
+.brand-banner-text .brand-banner-title { font-size:1.15rem; font-weight:800; color:#0f172a; }
+.brand-banner-text .brand-banner-sub { font-size:0.85rem; color:#6b7280; }
+
+/* About page specific tweaks */
+.about-hero { margin-bottom:18px; }
+
 

@@ -1,14 +1,10 @@
-<?php
-// Initialize the session
-session_start();
-
+<?php include_once 'bootstrap.php';
 // Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: login.php");
     exit;
 }
-
-require_once "config.php";
+include_once 'brand.php';
 
 $username = $email = $first_name = $last_name = $phone = $address = "";
 $username_err = $email_err = $first_name_err = $last_name_err = $phone_err = $address_err = "";
@@ -101,13 +97,16 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     if(empty($username_err) && empty($email_err) && empty($first_name_err) && empty($last_name_err)){
         $sql = "UPDATE users SET username = ?, email = ?, first_name = ?, last_name = ?, phone = ?, address = ? WHERE user_id = ?";
         if($stmt = $conn->prepare($sql)){
-            $stmt->bind_param("ssssssi", $param_username, $param_email, $param_first_name, $param_last_name, $param_phone, $param_address, $_SESSION["user_id"]);
+            // Prepare parameter variables and ensure we bind variables (not expressions)
             $param_username = $username;
             $param_email = $email;
             $param_first_name = $first_name;
             $param_last_name = $last_name;
             $param_phone = $phone;
             $param_address = $address;
+            $param_id = isset($_SESSION["user_id"]) ? $_SESSION["user_id"] : 0;
+
+            $stmt->bind_param("ssssssi", $param_username, $param_email, $param_first_name, $param_last_name, $param_phone, $param_address, $param_id);
 
             if($stmt->execute()){
                 $_SESSION["username"] = $username; // Update session username
@@ -139,32 +138,32 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
             <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
                 <label>Username</label>
-                <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($username); ?>">
+                <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($username ?? ''); ?>">
                 <span class="help-block"><?php echo $username_err; ?></span>
             </div>
             <div class="form-group <?php echo (!empty($email_err)) ? 'has-error' : ''; ?>">
                 <label>Email</label>
-                <input type="email" name="email" class="form-control" value="<?php echo htmlspecialchars($email); ?>">
+                <input type="email" name="email" class="form-control" value="<?php echo htmlspecialchars($email ?? ''); ?>">
                 <span class="help-block"><?php echo $email_err; ?></span>
             </div>
             <div class="form-group <?php echo (!empty($first_name_err)) ? 'has-error' : ''; ?>">
                 <label>First Name</label>
-                <input type="text" name="first_name" class="form-control" value="<?php echo htmlspecialchars($first_name); ?>">
+                <input type="text" name="first_name" class="form-control" value="<?php echo htmlspecialchars($first_name ?? ''); ?>">
                 <span class="help-block"><?php echo $first_name_err; ?></span>
             </div>
             <div class="form-group <?php echo (!empty($last_name_err)) ? 'has-error' : ''; ?>">
                 <label>Last Name</label>
-                <input type="text" name="last_name" class="form-control" value="<?php echo htmlspecialchars($last_name); ?>">
+                <input type="text" name="last_name" class="form-control" value="<?php echo htmlspecialchars($last_name ?? ''); ?>">
                 <span class="help-block"><?php echo $last_name_err; ?></span>
             </div>
             <div class="form-group <?php echo (!empty($phone_err)) ? 'has-error' : ''; ?>">
                 <label>Phone</label>
-                <input type="text" name="phone" class="form-control" value="<?php echo htmlspecialchars($phone); ?>" placeholder="e.g., (555) 123-4567">
+                <input type="text" name="phone" class="form-control" value="<?php echo htmlspecialchars($phone ?? ''); ?>" placeholder="e.g., (555) 123-4567">
                 <span class="help-block"><?php echo $phone_err; ?></span>
             </div>
             <div class="form-group <?php echo (!empty($address_err)) ? 'has-error' : ''; ?>">
                 <label>Address</label>
-                <textarea name="address" class="form-control" placeholder="Your address"><?php echo htmlspecialchars($address); ?></textarea>
+                <textarea name="address" class="form-control" placeholder="Your address"><?php echo htmlspecialchars($address ?? ''); ?></textarea>
                 <span class="help-block"><?php echo $address_err; ?></span>
             </div>
             <div class="form-group">

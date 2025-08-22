@@ -1,14 +1,10 @@
-<?php
-// Initialize the session
-session_start();
-
+<?php include_once 'bootstrap.php';
 // Check if the user is already logged in, if yes then redirect him to welcome page
 if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
     header("location: dashboard.php");
     exit;
 }
 
-require_once "config.php";
 
 $username = $password = "";
 $username_err = $password_err = $login_err = "";
@@ -92,6 +88,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <?php include_once 'brand.php'; ?>
     <div class="wrapper">
         <h2>Login</h2>
         <p>Please fill in your credentials to login.</p>

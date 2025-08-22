@@ -1,125 +1,38 @@
 <?php
-// Initialize the session
+// Make About page the home. If POST login attempt exists, handle login logic; otherwise redirect to about.php
 session_start();
-
-// Check if the user is already logged in, if yes then redirect him to welcome page
-if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
-    header("location: dashboard.php");
-    exit;
-}
-
 require_once "config.php";
 
-$username = $password = "";
-$username_err = $password_err = $login_err = "";
+// If a login POST occurred, process it and redirect to dashboard on success
+if ($_SERVER["REQUEST_METHOD"] === 'POST' && isset($_POST['username']) && isset($_POST['password'])) {
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']);
 
-if($_SERVER["REQUEST_METHOD"] == "POST"){
-
-    // Check if username is empty
-    if(empty(trim($_POST["username"]))){
-        $username_err = "Please enter username.";
-    } else{
-        $username = trim($_POST["username"]);
-    }
-
-    // Check if password is empty
-    if(empty(trim($_POST["password"]))){
-        $password_err = "Please enter your password.";
-    } else{
-        $password = trim($_POST["password"]);
-    }
-
-    // Validate credentials
-    if(empty($username_err) && empty($password_err)){
-        // Prepare a select statement for mysqli
+    if ($username !== '' && $password !== '') {
         $sql = "SELECT user_id, username, password_hash, role FROM users WHERE username = ?";
-
-        if($stmt = $conn->prepare($sql)){
-            // Bind variables to the prepared statement as parameters
-            $stmt->bind_param("s", $param_username);
-
-            // Set parameters
-            $param_username = $username;
-
-            // Attempt to execute the prepared statement
-            if($stmt->execute()){
-                // Store result
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->bind_param('s', $username);
+            if ($stmt->execute()) {
                 $stmt->store_result();
-
-                // Check if username exists, if yes then verify password
-                if($stmt->num_rows == 1){
-                    // Bind result variables
+                if ($stmt->num_rows == 1) {
                     $stmt->bind_result($user_id, $stored_username, $hashed_password, $role);
-                    if($stmt->fetch()){
-                        if(password_verify($password, $hashed_password)){
-                            // Password is correct, session is already started
-                            
-                            // Store data in session variables
-                            $_SESSION["loggedin"] = true;
-                            $_SESSION["user_id"] = $user_id;
-                            $_SESSION["username"] = $stored_username;
-                            $_SESSION["role"] = $role;
-
-                            // Redirect user to dashboard page
-                            header("location: dashboard.php");
-                            exit;
-                        } else{
-                            // Password is not valid, display a generic error message
-                            $login_err = "Invalid username or password.";
-                        }
+                    if ($stmt->fetch() && password_verify($password, $hashed_password)) {
+                        $_SESSION["loggedin"] = true;
+                        $_SESSION["user_id"] = $user_id;
+                        $_SESSION["username"] = $stored_username;
+                        $_SESSION["role"] = $role;
+                        header('Location: dashboard.php');
+                        exit;
                     }
-                } else{
-                    // Username doesn't exist, display a generic error message
-                    $login_err = "Invalid username or password.";
                 }
-            } else{
-                echo "Oops! Something went wrong. Please try again later.";
             }
-
-            // Close statement
             $stmt->close();
         }
     }
-
-    // Close connection
-    $conn->close();
+    // On failure, fall through to redirect to about page
 }
+
+// For GET and other requests, redirect to about.php as home
+header('Location: about.php');
+exit;
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Login</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <h2>Login</h2>
-        <p>Please fill in your credentials to login.</p>
-
-        <?php
-        if(!empty($login_err)){
-            echo "<div class=\"alert alert-danger\">" . $login_err . "</div>";
-        }
-        ?>
-
-        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-            <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
-                <label>Username</label>
-                <input type="text" name="username" class="form-control" value="<?php echo $username; ?>">
-                <span class="help-block"><?php echo $username_err; ?></span>
-            </div>
-            <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
-                <label>Password</label>
-                <input type="password" name="password" class="form-control">
-                <span class="help-block"><?php echo $password_err; ?></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" class="btn btn-primary" value="Login">
-            </div>
-            <p>Don't have an account? <a href="register.php">Sign up now</a>.</p>
-        </form>
-    </div>
-</body>
-</html>

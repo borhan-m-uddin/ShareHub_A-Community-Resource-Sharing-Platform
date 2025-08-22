@@ -1,5 +1,5 @@
-<?php
-require_once "config.php";
+<?php include_once 'bootstrap.php';
+include_once 'brand.php';
 
 $username = $password = $confirm_password = $email = "";
 $role = 'seeker';
@@ -90,9 +90,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
-    // Determine requested role (seeker or giver)
-    if (isset($_POST['role']) && in_array($_POST['role'], ['seeker', 'giver'])) {
-        $role = $_POST['role'];
+    // Determine requested role (seeker or giver) with sanitization
+    // Avoid deprecated FILTER_SANITIZE_STRING — read raw and whitelist validator
+    $raw_role = isset($_POST['role']) ? trim((string)$_POST['role']) : '';
+    // Keep only letters, hyphen and underscore to be safe
+    $sanitized_role = preg_replace('/[^a-zA-Z_-]/', '', $raw_role);
+    if ($sanitized_role !== '' && in_array($sanitized_role, ['seeker', 'giver'], true)) {
+        $role = $sanitized_role;
     } else {
         $role = 'seeker';
     }
