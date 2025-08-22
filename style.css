@@ -105,7 +105,7 @@ a:hover { text-decoration:underline; }
 .wrapper { margin-top:12px; }
 
 /* Brand banner used on simple pages */
-.brand-banner { display:flex; align-items:center; gap:12px; padding:18px 0; }
+.brand-banner { display:flex; align-items:center; gap:12px; padding:18px 50px; }
 .brand-banner-logo { width:56px; height:56px; display:block; }
 .brand-banner-text .brand-banner-title { font-size:1.15rem; font-weight:800; color:#0f172a; }
 .brand-banner-text .brand-banner-sub { font-size:0.85rem; color:#6b7280; }
