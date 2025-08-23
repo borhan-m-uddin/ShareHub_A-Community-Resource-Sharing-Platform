@@ -1,5 +1,4 @@
 <?php include_once 'bootstrap.php';
-include_once 'brand.php';
 
 $username = $password = $confirm_password = $email = "";
 $role = 'seeker';
@@ -142,6 +141,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <?php include_once 'brand.php'; ?>
     <div class="wrapper">
         <h2>Register</h2>
         <p>Please fill this form to create an account.</p>

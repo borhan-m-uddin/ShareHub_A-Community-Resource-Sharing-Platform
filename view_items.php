@@ -1,6 +1,5 @@
 <?php
-session_start();
-require_once "config.php";
+require_once __DIR__ . "/bootstrap.php";
 
 // Check if user is logged in
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
@@ -271,6 +270,15 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
             padding: 20px;
         }
 
+        .item-image {
+            width: 100%;
+            max-height: 220px;
+            object-fit: cover;
+            border-bottom: 1px solid #eee;
+            display: block;
+            background: #fafafa;
+        }
+
         .item-description {
             color: #666;
             margin-bottom: 15px;
@@ -455,6 +463,9 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
                             </div>
                         </div>
                         <div class="item-body">
+                            <?php if (!empty($item['image_url'])): ?>
+                                <img class="item-image" src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
+                            <?php endif; ?>
                             <div class="item-description">
                                 <?php echo htmlspecialchars($item['description']); ?>
                             </div>

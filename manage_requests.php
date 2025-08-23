@@ -1,12 +1,10 @@
 <?php
-session_start();
+include_once 'bootstrap.php';
 
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== "giver"){
+if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || ($_SESSION["role"] ?? '') !== "giver") {
     header("location: login.php");
     exit;
 }
-
-require_once "config.php";
 
 $incoming_requests = [];
 
@@ -36,33 +34,32 @@ if($stmt = $conn->prepare($sql)){
 }
 
 // Handle request status update
-if($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["request_id"]) && isset($_POST["action"])){
-    $request_id = $_POST["request_id"];
-    $action = $_POST["action"];
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["request_id"], $_POST["action"])) {
+    $request_id = (int)$_POST['request_id'];
+    $action = $_POST['action'] === 'approve' ? 'approve' : 'decline';
+    $new_status = $action === 'approve' ? 'approved' : 'rejected'; // enum uses 'rejected'
 
-    $new_status = ($action == "approve") ? "approved" : "declined";
-
-    $sql_update = "UPDATE requests SET status = ? WHERE request_id = ?";
-    if($stmt_update = $conn->prepare($sql_update)){
-        $stmt_update->bind_param("si", $new_status, $request_id);
-        if($stmt_update->execute()){
-            if ($new_status == "approved") {
-                $sql_get_resource = "SELECT request_type, item_id, service_id FROM requests WHERE request_id = ?";
-                if ($stmt_get_resource = $conn->prepare($sql_get_resource)) {
-                    $stmt_get_resource->bind_param("i", $request_id);
-                    $stmt_get_resource->execute();
-                    $stmt_get_resource->bind_result($request_type, $item_id, $service_id);
-                    $stmt_get_resource->fetch();
-                    $stmt_get_resource->close();
-
-                    if ($request_type == "item" && $item_id) {
-                        $sql_update_item = "UPDATE items SET availability_status = 'pending' WHERE item_id = ?";
-                        if ($stmt_update_item = $conn->prepare($sql_update_item)) {
-                            $stmt_update_item->bind_param("i", $item_id);
-                            $stmt_update_item->execute();
-                            $stmt_update_item->close();
-                        }
-                    }
+    // Update only if the request belongs to this giver (ownership check via JOIN)
+    $sql_update = "UPDATE requests r
+                   LEFT JOIN items i ON r.request_type='item' AND r.item_id=i.item_id
+                   LEFT JOIN services s ON r.request_type='service' AND r.service_id=s.service_id
+                   SET r.status = ?
+                   WHERE r.request_id = ?
+                     AND ((r.request_type='item' AND i.giver_id = ?) OR (r.request_type='service' AND s.giver_id = ?))";
+    if ($stmt_update = $conn->prepare($sql_update)) {
+        $uid = (int)$_SESSION['user_id'];
+        $stmt_update->bind_param("siii", $new_status, $request_id, $uid, $uid);
+        if ($stmt_update->execute() && $stmt_update->affected_rows > 0) {
+            if ($new_status === 'approved') {
+                // Set item availability to pending if it's an item request
+                $sql_update_item = "UPDATE items i
+                                    JOIN requests r ON r.item_id = i.item_id AND r.request_type='item'
+                                    SET i.availability_status='pending'
+                                    WHERE r.request_id = ?";
+                if ($stmt_update_item = $conn->prepare($sql_update_item)) {
+                    $stmt_update_item->bind_param("i", $request_id);
+                    $stmt_update_item->execute();
+                    $stmt_update_item->close();
                 }
             }
             header("location: manage_requests.php");

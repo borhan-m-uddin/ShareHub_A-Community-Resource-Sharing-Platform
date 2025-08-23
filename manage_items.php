@@ -1,6 +1,5 @@
 <?php
-session_start();
-require_once "config.php";
+require_once __DIR__ . "/bootstrap.php";
 
 // Check if user is logged in and is giver or admin
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || 
@@ -22,17 +21,73 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $category = $_POST['category'];
                 $condition_status = $_POST['condition_status'];
                 $pickup_location = trim($_POST['pickup_location']);
-                
-                if (!empty($title) && !empty($description) && !empty($pickup_location)) {
-                    $stmt = $conn->prepare("INSERT INTO items (giver_id, title, description, category, condition_status, pickup_location, posting_date) VALUES (?, ?, ?, ?, ?, ?, NOW())");
-                    $stmt->bind_param("isssss", $_SESSION['user_id'], $title, $description, $category, $condition_status, $pickup_location);
+                $image_url = null;
+
+                // Handle optional single image upload
+                if (isset($_FILES['image']) && is_array($_FILES['image']) && ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                    $err = (int)$_FILES['image']['error'];
+                    if ($err === UPLOAD_ERR_OK) {
+                        $tmp = $_FILES['image']['tmp_name'];
+                        $size = (int)($_FILES['image']['size'] ?? 0);
+                        // Validate MIME with fallbacks and JPEG variants
+                        $mime = null;
+                        if (function_exists('finfo_open')) {
+                            $fi = finfo_open(FILEINFO_MIME_TYPE);
+                            if ($fi) { $mime = finfo_file($fi, $tmp); finfo_close($fi); }
+                        }
+                        if (!$mime && function_exists('getimagesize')) {
+                            $gi = @getimagesize($tmp);
+                            if (is_array($gi) && !empty($gi['mime'])) { $mime = $gi['mime']; }
+                        }
+                        if (!$mime && isset($_FILES['image']['type'])) { $mime = $_FILES['image']['type']; }
+                        $mime = $mime ? strtolower($mime) : null;
+                        $allowed = [
+                            'image/jpeg' => 'jpg',
+                            'image/jpg'  => 'jpg',
+                            'image/pjpeg'=> 'jpg',
+                            'image/png'  => 'png',
+                            'image/gif'  => 'gif',
+                            'image/webp' => 'webp',
+                        ];
+                        if ($mime && isset($allowed[$mime]) && $size <= 2*1024*1024) {
+                            $ext = $allowed[$mime];
+                            $dir = __DIR__ . '/uploads/items';
+                            if (!is_dir($dir)) { @mkdir($dir, 0777, true); }
+                            try { $name = bin2hex(random_bytes(16)) . '.' . $ext; } catch (Exception $e) { $name = uniqid('', true) . '.' . $ext; }
+                            $destAbs = $dir . '/' . $name;
+                            $destRel = 'uploads/items/' . $name;
+                            if (move_uploaded_file($tmp, $destAbs)) {
+                                $image_url = $destRel;
+                            } else {
+                                $error = "Error saving uploaded image.";
+                            }
+                        } else {
+                            $error = "Invalid image (type or size). Allowed: JPG/PNG/GIF/WEBP up to 2MB.";
+                        }
+                    } else {
+                        $errMap = [
+                            UPLOAD_ERR_INI_SIZE => 'The file exceeds server limit (upload_max_filesize).',
+                            UPLOAD_ERR_FORM_SIZE => 'The file exceeds form limit (MAX_FILE_SIZE).',
+                            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded.',
+                            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+                            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the upload.'
+                        ];
+                        $error = isset($errMap[$err]) ? $errMap[$err] : ("Image upload error (code $err).");
+                    }
+                }
+
+                if (!empty($title) && !empty($description) && !empty($pickup_location) && empty($error)) {
+                    $stmt = $conn->prepare("INSERT INTO items (giver_id, title, description, category, condition_status, pickup_location, image_url, posting_date) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+                    $stmt->bind_param("issssss", $_SESSION['user_id'], $title, $description, $category, $condition_status, $pickup_location, $image_url);
                     if ($stmt->execute()) {
                         $message = "Item added successfully!";
                     } else {
                         $error = "Error adding item: " . $conn->error;
                     }
                     $stmt->close();
-                } else {
+                } else if (empty($error)) {
                     $error = "Please fill in all required fields!";
                 }
                 break;
@@ -45,15 +100,83 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $condition_status = $_POST['condition_status'];
                 $availability_status = $_POST['availability_status'];
                 $pickup_location = trim($_POST['pickup_location']);
-                
-                $stmt = $conn->prepare("UPDATE items SET title = ?, description = ?, category = ?, condition_status = ?, availability_status = ?, pickup_location = ? WHERE item_id = ? AND giver_id = ?");
-                $stmt->bind_param("ssssssii", $title, $description, $category, $condition_status, $availability_status, $pickup_location, $item_id, $_SESSION['user_id']);
-                if ($stmt->execute()) {
-                    $message = "Item updated successfully!";
-                } else {
-                    $error = "Error updating item: " . $conn->error;
+                $new_image_url = null;
+                $remove_image = isset($_POST['remove_image']) && $_POST['remove_image'] === '1';
+
+                // Optional: process new image upload
+                if (!$remove_image && isset($_FILES['edit_image']) && is_array($_FILES['edit_image']) && ($_FILES['edit_image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                    $err = (int)$_FILES['edit_image']['error'];
+                    if ($err === UPLOAD_ERR_OK) {
+                        $tmp = $_FILES['edit_image']['tmp_name'];
+                        $size = (int)($_FILES['edit_image']['size'] ?? 0);
+                        $mime = null;
+                        if (function_exists('finfo_open')) {
+                            $fi = finfo_open(FILEINFO_MIME_TYPE);
+                            if ($fi) { $mime = finfo_file($fi, $tmp); finfo_close($fi); }
+                        }
+                        if (!$mime && function_exists('getimagesize')) {
+                            $gi = @getimagesize($tmp);
+                            if (is_array($gi) && !empty($gi['mime'])) { $mime = $gi['mime']; }
+                        }
+                        if (!$mime && isset($_FILES['edit_image']['type'])) { $mime = $_FILES['edit_image']['type']; }
+                        $mime = $mime ? strtolower($mime) : null;
+                        $allowed = [
+                            'image/jpeg' => 'jpg',
+                            'image/jpg'  => 'jpg',
+                            'image/pjpeg'=> 'jpg',
+                            'image/png'  => 'png',
+                            'image/gif'  => 'gif',
+                            'image/webp' => 'webp',
+                        ];
+                        if ($mime && isset($allowed[$mime]) && $size <= 2*1024*1024) {
+                            $ext = $allowed[$mime];
+                            $dir = __DIR__ . '/uploads/items';
+                            if (!is_dir($dir)) { @mkdir($dir, 0777, true); }
+                            try { $name = bin2hex(random_bytes(16)) . '.' . $ext; } catch (Exception $e) { $name = uniqid('', true) . '.' . $ext; }
+                            $destAbs = $dir . '/' . $name;
+                            $destRel = 'uploads/items/' . $name;
+                            if (move_uploaded_file($tmp, $destAbs)) {
+                                $new_image_url = $destRel;
+                            } else {
+                                $error = "Error saving uploaded image.";
+                            }
+                        } else {
+                            $error = "Invalid image (type or size). Allowed: JPG/PNG/GIF/WEBP up to 2MB.";
+                        }
+                    } else {
+                        $errMap = [
+                            UPLOAD_ERR_INI_SIZE => 'The file exceeds server limit (upload_max_filesize).',
+                            UPLOAD_ERR_FORM_SIZE => 'The file exceeds form limit (MAX_FILE_SIZE).',
+                            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded.',
+                            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+                            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the upload.'
+                        ];
+                        $error = isset($errMap[$err]) ? $errMap[$err] : ("Image upload error (code $err).");
+                    }
                 }
-                $stmt->close();
+                
+                if (empty($error)) {
+                    if ($remove_image) {
+                        $stmt = $conn->prepare("UPDATE items SET title = ?, description = ?, category = ?, condition_status = ?, availability_status = ?, pickup_location = ?, image_url = NULL WHERE item_id = ? AND giver_id = ?");
+                        $stmt->bind_param("ssssssii", $title, $description, $category, $condition_status, $availability_status, $pickup_location, $item_id, $_SESSION['user_id']);
+                    } elseif ($new_image_url !== null) {
+                        $stmt = $conn->prepare("UPDATE items SET title = ?, description = ?, category = ?, condition_status = ?, availability_status = ?, pickup_location = ?, image_url = ? WHERE item_id = ? AND giver_id = ?");
+                        $stmt->bind_param("sssssssii", $title, $description, $category, $condition_status, $availability_status, $pickup_location, $new_image_url, $item_id, $_SESSION['user_id']);
+                    } else {
+                        $stmt = $conn->prepare("UPDATE items SET title = ?, description = ?, category = ?, condition_status = ?, availability_status = ?, pickup_location = ? WHERE item_id = ? AND giver_id = ?");
+                        $stmt->bind_param("ssssssii", $title, $description, $category, $condition_status, $availability_status, $pickup_location, $item_id, $_SESSION['user_id']);
+                    }
+                }
+                if (empty($error)) {
+                    if ($stmt->execute()) {
+                        $message = "Item updated successfully!";
+                    } else {
+                        $error = "Error updating item: " . $conn->error;
+                    }
+                    $stmt->close();
+                }
                 break;
 
             case 'delete_item':
@@ -257,6 +380,15 @@ $items_result = $stmt->get_result();
             padding: 20px;
         }
 
+        .item-image {
+            width: 100%;
+            max-height: 220px;
+            object-fit: cover;
+            border-bottom: 1px solid #eee;
+            display: block;
+            background: #fafafa;
+        }
+
         .item-description {
             color: #666;
             margin-bottom: 15px;
@@ -406,7 +538,7 @@ $items_result = $stmt->get_result();
         <!-- Add New Item Panel -->
         <div class="add-item-panel">
             <h3 style="margin-bottom: 20px; color: #333;">➕ Add New Item</h3>
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="add_item">
                 <div class="form-grid">
                     <div class="form-group">
@@ -443,6 +575,11 @@ $items_result = $stmt->get_result();
                         <input type="text" id="pickup_location" name="pickup_location" class="form-control" 
                                placeholder="e.g., Downtown, 123 Main St" required>
                     </div>
+                    <div class="form-group">
+                        <label for="image">Image (Optional)</label>
+                        <input type="file" id="image" name="image" class="form-control" accept="image/*">
+                        <small style="color:#666">Accepted: JPG, PNG, GIF, WEBP. Max 2MB.</small>
+                    </div>
                     <div class="form-group full-width">
                         <label for="description">Description *</label>
                         <textarea id="description" name="description" class="form-control" 
@@ -465,6 +602,9 @@ $items_result = $stmt->get_result();
                             <div class="item-category"><?php echo htmlspecialchars($item['category']); ?></div>
                         </div>
                         <div class="item-body">
+                            <?php if (!empty($item['image_url'])): ?>
+                                <img class="item-image" src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
+                            <?php endif; ?>
                             <div class="item-description">
                                 <?php echo htmlspecialchars($item['description']); ?>
                             </div>
@@ -520,7 +660,7 @@ $items_result = $stmt->get_result();
                 <span class="close" onclick="closeEditModal()">&times;</span>
                 <h3>✏️ Edit Item</h3>
             </div>
-            <form method="POST" id="editForm">
+            <form method="POST" id="editForm" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="update_item">
                 <input type="hidden" name="item_id" id="edit_item_id">
                 <div class="form-grid">
@@ -569,6 +709,18 @@ $items_result = $stmt->get_result();
                         <label for="edit_description">Description *</label>
                         <textarea id="edit_description" name="description" class="form-control" required></textarea>
                     </div>
+                    <div class="form-group full-width">
+                        <label for="edit_image">Change Image</label>
+                        <input type="file" id="edit_image" name="edit_image" class="form-control" accept="image/*">
+                        <small style="color:#666">Leave empty to keep current image. Max 2MB. JPG/PNG/GIF/WEBP.</small>
+                        <div style="margin-top:8px">
+                            <label style="display:flex;align-items:center;gap:8px;">
+                                <input type="checkbox" id="edit_remove_image" name="remove_image" value="1">
+                                Remove current image
+                            </label>
+                        </div>
+                        <img id="edit_current_image" src="" alt="Current image" style="margin-top:10px;max-width:100%;max-height:220px;display:none;border:1px solid #eee;border-radius:6px;object-fit:cover;">
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-warning">✏️ Update Item</button>
             </form>
@@ -589,6 +741,19 @@ $items_result = $stmt->get_result();
                         document.getElementById('edit_availability_status').value = data.item.availability_status;
                         document.getElementById('edit_pickup_location').value = data.item.pickup_location;
                         document.getElementById('edit_description').value = data.item.description;
+                        const img = document.getElementById('edit_current_image');
+                        const removeCb = document.getElementById('edit_remove_image');
+                        if (data.item.image_url) {
+                            img.src = data.item.image_url;
+                            img.style.display = 'block';
+                            removeCb.checked = false;
+                            removeCb.disabled = false;
+                        } else {
+                            img.src = '';
+                            img.style.display = 'none';
+                            removeCb.checked = false;
+                            removeCb.disabled = true;
+                        }
                         document.getElementById('editModal').style.display = 'block';
                     } else {
                         alert('Error loading item data');

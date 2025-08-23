@@ -1,136 +1,143 @@
 <?php
-// Initialize the session
-session_start();
+// Central bootstrap and auth
+include_once 'bootstrap.php';
 
-// Check if the user is logged in and is a Giver, otherwise redirect to login page
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== "giver"){
+// Require giver role
+if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || ($_SESSION["role"] ?? '') !== "giver") {
     header("location: login.php");
     exit;
 }
 
-require_once "config.php";
-
-$title = $description = $category = $location = $terms_of_use = "";
-$title_err = $description_err = $category_err = $location_err = $terms_of_use_err = "";
-$image_paths = [];
+// Initialize state
+$title = $description = $category = $pickup_location = "";
+$condition_status = 'good';
+$title_err = $description_err = $category_err = $pickup_location_err = $image_err = $condition_err = "";
+$saved_image_url = null; // relative path stored into DB image_url
 
 // Processing form data when form is submitted
-if($_SERVER["REQUEST_METHOD"] == "POST"){
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Validate title
-    if(empty(trim($_POST["title"]))){
-        $title_err = "Please enter a title for the item.";
-    } else{
-        $title = trim($_POST["title"]);
-    }
+    $title = trim((string)($_POST["title"] ?? ''));
+    if ($title === '') { $title_err = "Please enter a title for the item."; }
 
     // Validate description
-    if(empty(trim($_POST["description"]))){
-        $description_err = "Please enter a description for the item.";
-    } else{
-        $description = trim($_POST["description"]);
+    $description = trim((string)($_POST["description"] ?? ''));
+    if ($description === '') { $description_err = "Please enter a description for the item."; }
+
+    // Validate category (whitelist basic options)
+    $allowed_categories = ['tools','books','electronics','garden','other'];
+    $category = trim((string)($_POST["category"] ?? ''));
+    if ($category === '' || !in_array($category, $allowed_categories, true)) {
+        $category_err = "Please select a valid category.";
     }
 
-    // Validate category
-    if(empty(trim($_POST["category"]))){
-        $category_err = "Please select a category.";
-    } else{
-        $category = trim($_POST["category"]);
+    // Validate pickup location (align with schema)
+    $pickup_location = trim((string)($_POST["pickup_location"] ?? ''));
+    if ($pickup_location === '') { $pickup_location_err = "Please enter the pickup location."; }
+
+    // Validate condition status (enum)
+    $allowed_conditions = ['new','like_new','good','fair','poor'];
+    $condition_status = trim((string)($_POST['condition_status'] ?? 'good'));
+    if (!in_array($condition_status, $allowed_conditions, true)) {
+        $condition_status = 'good';
     }
 
-    // Validate location
-    if(empty(trim($_POST["location"]))){
-        $location_err = "Please enter the item's location.";
-    } else{
-        $location = trim($_POST["location"]);
-    }
+    // Handle single image upload (stores path in image_url)
+    if (isset($_FILES['image']) && is_array($_FILES['image']) && ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+        $err = (int)$_FILES['image']['error'];
+        if ($err === UPLOAD_ERR_OK) {
+            $tmp = $_FILES['image']['tmp_name'];
 
-    // Validate terms of use
-    if(empty(trim($_POST["terms_of_use"]))){
-        $terms_of_use_err = "Please enter terms of use for the item.";
-    } else{
-        $terms_of_use = trim($_POST["terms_of_use"]);
-    }
-
-    // Handle image uploads
-    if(isset($_FILES["item_images"]) && !empty($_FILES["item_images"]["name"][0])) {
-        $target_dir = "uploads/";
-        if (!is_dir($target_dir)) {
-            mkdir($target_dir, 0777, true);
-        }
-        foreach($_FILES["item_images"]["name"] as $key => $name) {
-            $target_file = $target_dir . basename($_FILES["item_images"]["name"][$key]);
-            $uploadOk = 1;
-            $imageFileType = strtolower(pathinfo($target_file,PATHINFO_EXTENSION));
-
-            // Check if image file is a actual image or fake image
-            $check = getimagesize($_FILES["item_images"]["tmp_name"][$key]);
-            if($check !== false) {
-                $uploadOk = 1;
-            } else {
-                echo "File is not an image.";
-                $uploadOk = 0;
-            }
-
-            // Check file size
-            if ($_FILES["item_images"]["size"][$key] > 500000) { // 500KB
-                echo "Sorry, your file is too large.";
-                $uploadOk = 0;
-            }
-
-            // Allow certain file formats
-            if($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg"
-            && $imageFileType != "gif" ) {
-                echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed.";
-                $uploadOk = 0;
-            }
-
-            // Check if $uploadOk is set to 0 by an error
-            if ($uploadOk == 0) {
-                echo "Sorry, your file was not uploaded.";
-            // if everything is ok, try to upload file
-            } else {
-                if (move_uploaded_file($_FILES["item_images"]["tmp_name"][$key], $target_file)) {
-                    $image_paths[] = $target_file;
-                } else {
-                    echo "Sorry, there was an error uploading your file.";
+            // Determine MIME with fallbacks
+            $mime = null;
+            if (function_exists('finfo_open')) {
+                $f = finfo_open(FILEINFO_MIME_TYPE);
+                if ($f) {
+                    $mime = finfo_file($f, $tmp);
+                    finfo_close($f);
                 }
             }
+            if (!$mime && function_exists('getimagesize')) {
+                $gi = @getimagesize($tmp);
+                if (is_array($gi) && !empty($gi['mime'])) {
+                    $mime = $gi['mime'];
+                }
+            }
+            if (!$mime && isset($_FILES['image']['type'])) {
+                $mime = $_FILES['image']['type']; // last resort
+            }
+
+            // Accept common JPEG variants too
+            $allowed = [
+                'image/jpeg' => 'jpg',
+                'image/jpg'  => 'jpg',
+                'image/pjpeg'=> 'jpg',
+                'image/png'  => 'png',
+                'image/gif'  => 'gif',
+                'image/webp' => 'webp',
+            ];
+
+            if (!$mime || !isset($allowed[strtolower($mime)])) {
+                $image_err = "Only JPG, PNG, GIF or WEBP images are allowed.";
+            } else {
+                // Limit size to 2MB and respect PHP limits
+                $size = (int)($_FILES['image']['size'] ?? 0);
+                if ($size > 2 * 1024 * 1024) {
+                    $image_err = "Image size must be 2MB or less.";
+                } else {
+                    $ext = $allowed[strtolower($mime)];
+                    $dir = __DIR__ . '/uploads/items';
+                    if (!is_dir($dir)) {
+                        @mkdir($dir, 0777, true);
+                    }
+                    try { $name = bin2hex(random_bytes(16)) . '.' . $ext; } catch (Exception $e) { $name = uniqid('', true) . '.' . $ext; }
+                    $destAbs = $dir . '/' . $name;
+                    $destRel = 'uploads/items/' . $name; // stored in DB
+                    if (move_uploaded_file($tmp, $destAbs)) {
+                        $saved_image_url = $destRel;
+                    } else {
+                        $image_err = "Failed to save uploaded image.";
+                    }
+                }
+            }
+        } else {
+            // Map common PHP upload errors
+            $errMap = [
+                UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
+                UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive specified in the HTML form.',
+                UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded.',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server.',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk on the server.',
+                UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.'
+            ];
+            $image_err = isset($errMap[$err]) ? $errMap[$err] : ("Upload error (code $err).");
         }
     }
 
-    // Check input errors before inserting in database
-    if(empty($title_err) && empty($description_err) && empty($category_err) && empty($location_err) && empty($terms_of_use_err)){
-        // Prepare an insert statement
-        $sql = "INSERT INTO items (giver_id, title, description, category, location, image_paths, terms_of_use) VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-        if($stmt = $conn->prepare($sql)){
-            // Bind variables to the prepared statement as parameters
-            $stmt->bind_param("issssss", $param_giver_id, $param_title, $param_description, $param_category, $param_location, $param_image_paths, $param_terms_of_use);
-
-            // Set parameters
-            $param_giver_id = $_SESSION["user_id"];
+    // Insert when valid
+    if ($title_err === '' && $description_err === '' && $category_err === '' && $pickup_location_err === '' && $image_err === '') {
+        // Insert with explicit condition_status; availability_status uses default
+        $sql = "INSERT INTO items (giver_id, title, description, category, condition_status, pickup_location, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->bind_param("issssss", $param_giver_id, $param_title, $param_description, $param_category, $param_condition, $param_pickup_location, $param_image_url);
+            $param_giver_id = (int)$_SESSION['user_id'];
             $param_title = $title;
             $param_description = $description;
             $param_category = $category;
-            $param_location = $location;
-            $param_image_paths = implode(",", $image_paths); // Store image paths as a comma-separated string
-            $param_terms_of_use = $terms_of_use;
-
-            // Attempt to execute the prepared statement
-            if($stmt->execute()){
+            $param_condition = $condition_status;
+            $param_pickup_location = $pickup_location;
+            $param_image_url = $saved_image_url; // can be null
+            if ($stmt->execute()) {
                 header("location: dashboard.php");
-            } else{
+                exit;
+            } else {
                 echo "Something went wrong. Please try again later.";
             }
-
-            // Close statement
             $stmt->close();
         }
     }
-
-    // Close connection
-    $conn->close();
 }
 ?>
 
@@ -148,39 +155,46 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" enctype="multipart/form-data">
             <div class="form-group <?php echo (!empty($title_err)) ? 'has-error' : ''; ?>">
                 <label>Title</label>
-                <input type="text" name="title" class="form-control" value="<?php echo $title; ?>">
-                <span class="help-block"><?php echo $title_err; ?></span>
+                <input type="text" name="title" class="form-control" value="<?php echo htmlspecialchars($title, ENT_QUOTES); ?>">
+                <span class="help-block"><?php echo htmlspecialchars($title_err, ENT_QUOTES); ?></span>
             </div>
             <div class="form-group <?php echo (!empty($description_err)) ? 'has-error' : ''; ?>">
                 <label>Description</label>
-                <textarea name="description" class="form-control"><?php echo $description; ?></textarea>
-                <span class="help-block"><?php echo $description_err; ?></span>
+                <textarea name="description" class="form-control"><?php echo htmlspecialchars($description, ENT_QUOTES); ?></textarea>
+                <span class="help-block"><?php echo htmlspecialchars($description_err, ENT_QUOTES); ?></span>
             </div>
             <div class="form-group <?php echo (!empty($category_err)) ? 'has-error' : ''; ?>">
                 <label>Category</label>
                 <select name="category" class="form-control">
                     <option value="">Select Category</option>
-                    <option value="tools" <?php echo ($category == "tools") ? "selected" : ""; ?>>Tools</option>
-                    <option value="books" <?php echo ($category == "books") ? "selected" : ""; ?>>Books</option>
-                    <option value="electronics" <?php echo ($category == "electronics") ? "selected" : ""; ?>>Electronics</option>
-                    <option value="garden" <?php echo ($category == "garden") ? "selected" : ""; ?>>Garden Equipment</option>
-                    <option value="other" <?php echo ($category == "other") ? "selected" : ""; ?>>Other</option>
+                    <option value="tools" <?php echo ($category === "tools") ? "selected" : ""; ?>>Tools</option>
+                    <option value="books" <?php echo ($category === "books") ? "selected" : ""; ?>>Books</option>
+                    <option value="electronics" <?php echo ($category === "electronics") ? "selected" : ""; ?>>Electronics</option>
+                    <option value="garden" <?php echo ($category === "garden") ? "selected" : ""; ?>>Garden Equipment</option>
+                    <option value="other" <?php echo ($category === "other") ? "selected" : ""; ?>>Other</option>
                 </select>
-                <span class="help-block"><?php echo $category_err; ?></span>
-            </div>
-            <div class="form-group <?php echo (!empty($location_err)) ? 'has-error' : ''; ?>">
-                <label>Location</label>
-                <input type="text" name="location" class="form-control" value="<?php echo $location; ?>">
-                <span class="help-block"><?php echo $location_err; ?></span>
+                <span class="help-block"><?php echo htmlspecialchars($category_err, ENT_QUOTES); ?></span>
             </div>
             <div class="form-group">
-                <label>Item Images (Optional)</label>
-                <input type="file" name="item_images[]" class="form-control" multiple>
+                <label>Condition</label>
+                <select name="condition_status" class="form-control">
+                    <option value="new" <?php echo $condition_status==='new'?'selected':''; ?>>New</option>
+                    <option value="like_new" <?php echo $condition_status==='like_new'?'selected':''; ?>>Like New</option>
+                    <option value="good" <?php echo $condition_status==='good'?'selected':''; ?>>Good</option>
+                    <option value="fair" <?php echo $condition_status==='fair'?'selected':''; ?>>Fair</option>
+                    <option value="poor" <?php echo $condition_status==='poor'?'selected':''; ?>>Poor</option>
+                </select>
             </div>
-            <div class="form-group <?php echo (!empty($terms_of_use_err)) ? 'has-error' : ''; ?>">
-                <label>Terms of Use</label>
-                <textarea name="terms_of_use" class="form-control"><?php echo $terms_of_use; ?></textarea>
-                <span class="help-block"><?php echo $terms_of_use_err; ?></span>
+            <div class="form-group <?php echo (!empty($pickup_location_err)) ? 'has-error' : ''; ?>">
+                <label>Pickup Location</label>
+                <input type="text" name="pickup_location" class="form-control" value="<?php echo htmlspecialchars($pickup_location, ENT_QUOTES); ?>">
+                <span class="help-block"><?php echo htmlspecialchars($pickup_location_err, ENT_QUOTES); ?></span>
+            </div>
+            <div class="form-group <?php echo (!empty($image_err)) ? 'has-error' : ''; ?>">
+                <label>Item Image (Optional)</label>
+                <input type="file" name="image" class="form-control" accept="image/*">
+                <small class="help-block" style="color:#6b7280">Accepted: JPG, PNG, GIF, WEBP. Max 2MB.</small>
+                <span class="help-block"><?php echo htmlspecialchars($image_err, ENT_QUOTES); ?></span>
             </div>
             <div class="form-group">
                 <input type="submit" class="btn btn-primary" value="Add Item">
