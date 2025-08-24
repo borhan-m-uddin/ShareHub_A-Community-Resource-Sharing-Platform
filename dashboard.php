@@ -5,7 +5,6 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: index.php");
     exit;
 }
-include_once 'brand.php';
 ?>
 
 <!DOCTYPE html>
@@ -13,57 +12,82 @@ include_once 'brand.php';
 <head>
     <meta charset="UTF-8">
     <title>Dashboard</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .dashboard-links a {
-            display: block;
-            margin-bottom: 10px;
-            padding: 10px;
-            background-color: #e9ecef;
-            border-radius: 5px;
-            text-decoration: none;
-            color: #007bff;
-            font-weight: bold;
-        }
-        .dashboard-links a:hover {
-            background-color: #dee2e6;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="wrapper">
-        <h2>Welcome, <?php echo htmlspecialchars($_SESSION["username"] ?? ''); ?>!</h2>
-        <p>Your role: <b><?php echo htmlspecialchars($_SESSION["role"] ?? ''); ?></b></p>
+    <?php include_once 'header.php'; ?>
 
-        <div class="dashboard-links">
-            <a href="profile.php">👤 Manage Profile</a>
-            <a href="messages.php">💬 Messages</a>
-            <a href="reviews.php">⭐ Reviews & Ratings</a>
+    <div class="wrapper">
+        <div class="card">
+            <div class="card-body">
+                <h2 style="margin-bottom:6px;">Welcome, <?php echo htmlspecialchars($_SESSION["username"] ?? ''); ?> 👋</h2>
+                <p style="color:#6b7280;margin-bottom:0;">Role: <b><?php echo htmlspecialchars($_SESSION["role"] ?? ''); ?></b></p>
+            </div>
+        </div>
+
+        <div style="margin-top:16px;" class="grid grid-auto">
+            <a class="card" href="profile.php" style="text-decoration:none;">
+                <div class="card-body"><b>👤 Manage Profile</b><p style="margin-top:6px;color:#6b7280;">Update your info and settings</p></div>
+            </a>
+            <a class="card" href="messages.php" style="text-decoration:none;">
+                <div class="card-body"><b>💬 Messages</b><p style="margin-top:6px;color:#6b7280;">Conversations and notifications</p></div>
+            </a>
+            <a class="card" href="reviews.php" style="text-decoration:none;">
+                <div class="card-body"><b>⭐ Reviews & Ratings</b><p style="margin-top:6px;color:#6b7280;">Your feedback and trust</p></div>
+            </a>
 
             <?php if (isset($_SESSION["role"]) && $_SESSION["role"] === "giver"): ?>
-                <a href="manage_items.php">📦 Manage Items</a>
-                <a href="manage_services.php">⚙️ Manage Services</a>
-                <a href="manage_requests.php">📋 Manage Incoming Requests</a>
-                <a href="my_requests.php">📝 My Requests</a>
+                <a class="card" href="manage_items.php" style="text-decoration:none;">
+                    <div class="card-body"><b>📦 Manage Items</b><p style="margin-top:6px;color:#6b7280;">Add, edit, and track your items</p></div>
+                </a>
+                <a class="card" href="manage_services.php" style="text-decoration:none;">
+                    <div class="card-body"><b>⚙️ Manage Services</b><p style="margin-top:6px;color:#6b7280;">Offer and update your services</p></div>
+                </a>
+                <a class="card" href="manage_requests.php" style="text-decoration:none;">
+                    <div class="card-body"><b>📋 Incoming Requests</b><p style="margin-top:6px;color:#6b7280;">Approve or decline requests</p></div>
+                </a>
+                <a class="card" href="my_requests.php" style="text-decoration:none;">
+                    <div class="card-body"><b>📝 My Requests</b><p style="margin-top:6px;color:#6b7280;">Requests you have made</p></div>
+                </a>
             <?php endif; ?>
 
             <?php if (isset($_SESSION["role"]) && $_SESSION["role"] === "seeker"): ?>
-                <a href="view_items.php">🛍️ Browse Available Items</a>
-                <a href="view_services.php">⚙️ Browse Available Services</a>
-                <a href="my_requests.php">📝 My Requests</a>
+                <a class="card" href="view_items.php" style="text-decoration:none;">
+                    <div class="card-body"><b>🛍️ Browse Items</b><p style="margin-top:6px;color:#6b7280;">Find items shared by neighbors</p></div>
+                </a>
+                <a class="card" href="view_services.php" style="text-decoration:none;">
+                    <div class="card-body"><b>⚙️ Browse Services</b><p style="margin-top:6px;color:#6b7280;">Discover help and expertise</p></div>
+                </a>
+                <a class="card" href="my_requests.php" style="text-decoration:none;">
+                    <div class="card-body"><b>📝 My Requests</b><p style="margin-top:6px;color:#6b7280;">Track your requests</p></div>
+                </a>
             <?php endif; ?>
 
             <?php if (isset($_SESSION["role"]) && $_SESSION["role"] === "admin"): ?>
-                <a href="admin_panel.php">🛠️ Admin Panel</a>
-                <a href="admin_users.php">👥 Manage Users</a>
-                <a href="admin_items.php">📦 Manage All Items</a>
-                <a href="admin_services.php">⚙️ Manage All Services</a>
-                <a href="admin_requests.php">📋 Manage All Requests</a>
+                <a class="card" href="admin_panel.php" style="text-decoration:none;">
+                    <div class="card-body"><b>🛠️ Admin Panel</b><p style="margin-top:6px;color:#6b7280;">Platform settings and tools</p></div>
+                </a>
+                <a class="card" href="admin_users.php" style="text-decoration:none;">
+                    <div class="card-body"><b>👥 Manage Users</b><p style="margin-top:6px;color:#6b7280;">Review accounts and roles</p></div>
+                </a>
+                <a class="card" href="admin_items.php" style="text-decoration:none;">
+                    <div class="card-body"><b>📦 All Items</b><p style="margin-top:6px;color:#6b7280;">Moderate item listings</p></div>
+                </a>
+                <a class="card" href="admin_services.php" style="text-decoration:none;">
+                    <div class="card-body"><b>⚙️ All Services</b><p style="margin-top:6px;color:#6b7280;">Moderate services</p></div>
+                </a>
+                <a class="card" href="admin_requests.php" style="text-decoration:none;">
+                    <div class="card-body"><b>📋 All Requests</b><p style="margin-top:6px;color:#6b7280;">Review platform requests</p></div>
+                </a>
             <?php endif; ?>
+        </div>
 
-            <a href="logout.php" class="btn btn-danger">🚪 Sign Out of Your Account</a>
+        <div style="margin-top:18px; display:flex; gap:10px;">
+            <a href="logout.php" class="btn btn-danger">🚪 Sign Out</a>
         </div>
     </div>
+
+    </main>
 </body>
 </html>
 

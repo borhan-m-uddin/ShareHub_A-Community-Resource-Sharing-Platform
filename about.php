@@ -95,8 +95,14 @@ try {
             <h1>ShareHub — Share, Request, and Reuse in Your Community</h1>
             <p class="lead">Find items and services shared by neighbors. Post what you can give, request what you need, and build a more sustainable, supportive local network.</p>
             <div class="hero-ctas">
-                <a href="register.php" class="btn btn-primary">Get Started — Join Free</a>
-                <a href="view_items.php" class="btn btn-default">Browse Items</a>
+                <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']===true): ?>
+                    <a href="dashboard.php" class="btn btn-primary">Go to Dashboard</a>
+                    <a href="view_items.php" class="btn btn-default">Browse Items</a>
+                    <a href="view_services.php" class="btn btn-default">Browse Services</a>
+                <?php else: ?>
+                    <a href="register.php" class="btn btn-primary">Get Started — Join Free</a>
+                    <a href="view_items.php" class="btn btn-default">Browse Items</a>
+                <?php endif; ?>
             </div>
             <div class="stats">
                 <div class="stat"><div class="num"><?php echo count($latest_items) + 120; ?></div><div class="label">Items listed</div></div>

@@ -20,10 +20,10 @@ if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
         </div>
         <nav class="site-nav">
             <a href="index.php">Home</a>
-            <a href="dashboard.php">Dashboard</a>
-            <a href="view_items.php">Items</a>
-            <a href="view_services.php">Services</a>
             <?php if(isset($_SESSION['loggedin']) && $_SESSION['loggedin']===true): ?>
+                <a href="dashboard.php">Dashboard</a>
+                <a href="view_items.php">Items</a>
+                <a href="view_services.php">Services</a>
                 <a href="profile.php">Profile</a>
                 <a href="logout.php">Logout</a>
             <?php else: ?>

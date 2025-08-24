@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/bootstrap.php';
 
 // Allow any authenticated user to view their own requests (seekers and givers)
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
@@ -38,25 +38,11 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <title>My Requests</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .wrapper { max-width: 1200px; margin: 0 auto; }
-        .btn { padding: 8px 16px; margin: 2px; border: none; border-radius: 4px; text-decoration: none; display: inline-block; }
-        .btn-default { background: #6c757d; color: white; }
-        .request-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .request-table th, .request-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .request-table th { background-color: #f2f2f2; }
-        .status-pending { color: orange; font-weight: bold; }
-        .status-approved { color: green; font-weight: bold; }
-        .status-declined { color: red; font-weight: bold; }
-        .status-completed { color: blue; font-weight: bold; }
-        .alert-info { color: #31708f; background-color: #d9edf7; border: 1px solid #bce8f1; padding: 15px; border-radius: 4px; }
-        .badge { display: inline-block; padding: 2px 6px; font-size: 0.75em; font-weight: bold; border-radius: 4px; color: white; }
-        .badge-primary { background: #007bff; }
-        .badge-info { background: #17a2b8; }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
+    <?php include_once 'header.php'; ?>
     <div class="wrapper">
         <h2>📋 My Requests</h2>
         <p>View the status of your requests for items and services.</p>
@@ -102,12 +88,12 @@ $conn->close();
                 </tbody>
             </table>
         <?php else: ?>
-            <div class="alert-info">
+        <div class="alert alert-info">
                 <h4>📭 No Requests Yet</h4>
                 <p>You haven't made any requests yet.</p>
                 <p>
-                    <a href="view_items.php" class="btn btn-default">Browse Items</a>
-                    <a href="view_services.php" class="btn btn-default">Browse Services</a>
+            <a href="view_items.php" class="btn btn-default">Browse Items</a>
+            <a href="view_services.php" class="btn btn-default">Browse Services</a>
                 </p>
             </div>
         <?php endif; ?>

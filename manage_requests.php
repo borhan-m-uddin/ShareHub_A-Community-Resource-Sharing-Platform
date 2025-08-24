@@ -76,29 +76,10 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <title>Manage Requests</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .wrapper { max-width: 1200px; margin: 0 auto; }
-        .btn { padding: 8px 16px; margin: 2px; border: none; border-radius: 4px; text-decoration: none; display: inline-block; cursor: pointer; }
-        .btn-default { background: #6c757d; color: white; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .request-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .request-table th, .request-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .request-table th { background-color: #f2f2f2; }
-        .status-pending { color: orange; font-weight: bold; }
-        .status-approved { color: green; font-weight: bold; }
-        .status-declined { color: red; font-weight: bold; }
-        .status-completed { color: blue; font-weight: bold; }
-        .action-buttons form { display: inline-block; margin-right: 5px; }
-        .action-buttons .btn { padding: 5px 10px; font-size: 0.8em; }
-        .alert-info { color: #31708f; background-color: #d9edf7; border: 1px solid #bce8f1; padding: 15px; border-radius: 4px; }
-        .badge { display: inline-block; padding: 2px 6px; font-size: 0.75em; font-weight: bold; border-radius: 4px; color: white; }
-        .badge-primary { background: #007bff; }
-        .badge-info { background: #17a2b8; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <?php include_once 'header.php'; ?>
     <div class="wrapper">
         <h2>📨 Manage Incoming Requests</h2>
         <p>Review and respond to requests for your items and services.</p>
