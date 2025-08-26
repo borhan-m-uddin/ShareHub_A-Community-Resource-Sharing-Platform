@@ -1,37 +1,56 @@
 <?php
 // header.php - shared header with logo and top navigation
-// Do not unconditionally call session_start() here because header.php may be included
-// after output; start session only if headers are not yet sent and no session exists.
-if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
-    session_start();
-}
+// Expect bootstrap.php to be included before this file
 ?>
 <!---- shared header start ---->
 <header class="site-header">
     <div class="container">
         <div class="brand">
-            <a href="about.php" style="display:flex;align-items:center;text-decoration:none;color:inherit;">
-                <img src="logo.svg" alt="ShareHub logo" class="site-logo" />
-                <div class="brand-text">
-                    <div class="brand-title">ShareHub</div>
-                    <div class="brand-sub">A Community Resources Sharing Platform</div>
-                </div>
+            <a href="<?php echo site_href('about.php'); ?>" style="display:flex;align-items:center;text-decoration:none;color:inherit;">
+                <img src="<?php echo asset_url('assets/brand/logo-text.svg'); ?>" alt="ShareHub logo" class="site-logo" />
             </a>
         </div>
         <nav class="site-nav">
-            <a href="index.php">Home</a>
-            <?php if(isset($_SESSION['loggedin']) && $_SESSION['loggedin']===true): ?>
-                <a href="dashboard.php">Dashboard</a>
-                <a href="view_items.php">Items</a>
-                <a href="view_services.php">Services</a>
-                <a href="profile.php">Profile</a>
-                <a href="logout.php">Logout</a>
+            <a href="<?php echo site_href('index.php'); ?>">Home</a>
+            <?php if (!empty($_SESSION['loggedin'])): ?>
+                <a href="<?php echo site_href('dashboard.php'); ?>">Dashboard</a>
+                <?php if(isset($_SESSION['role']) && $_SESSION['role']==='admin'): ?>
+                    <a href="<?php echo site_href('admin/panel.php'); ?>">Admin Panel</a>
+                    <a href="<?php echo site_href('admin/requests.php'); ?>">Requests</a>
+                <?php endif; ?>
+                <a href="<?php echo site_href('profile.php'); ?>">Profile</a>
+                <a href="<?php echo site_href('logout.php'); ?>">Logout</a>
             <?php else: ?>
-                <a href="login.php">Login</a>
-                <a href="register.php">Register</a>
+                <a href="<?php echo site_href('login.php'); ?>">Login</a>
             <?php endif; ?>
+            <button id="themeToggle" class="btn btn-outline" style="margin-left:12px;">🌙</button>
         </nav>
     </div>
 </header>
 <main class="main-content">
 <!-- shared header end -->
+<script>
+// Theme toggle: persists in localStorage and sets html[data-theme]
+(function(){
+    const key = 'theme-preference';
+    const root = document.documentElement; // html element
+    function applyTheme(value){
+        const theme = (value === 'dark') ? 'dark' : 'light';
+        root.setAttribute('data-theme', theme);
+        const btn = document.getElementById('themeToggle');
+        if(btn){ btn.textContent = (theme === 'dark') ? '☀️' : '🌙'; btn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'); }
+    }
+    const saved = localStorage.getItem(key);
+    applyTheme(saved || 'light');
+    window.addEventListener('DOMContentLoaded', function(){
+        const btn = document.getElementById('themeToggle');
+        if(!btn) return;
+        btn.addEventListener('click', function(){
+            const current = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem(key, next);
+            applyTheme(next);
+        });
+    });
+})();
+</script>

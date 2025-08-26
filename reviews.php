@@ -1,14 +1,6 @@
 <?php
-// Initialize the session
-session_start();
-
-// Check if the user is logged in
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
-    header("location: login.php");
-    exit;
-}
-
-require_once "config.php";
+require_once __DIR__ . '/bootstrap.php';
+require_login();
 
 $user_id = $_SESSION["user_id"];
 $reviews_given = [];
@@ -144,7 +136,7 @@ if(!empty($reviews_received)){
     $avg_rating = round($total_rating / count($reviews_received), 1);
 }
 
-$conn->close();
+// Do not close shared connection here; keep for page footer usage
 ?>
 
 <!DOCTYPE html>
@@ -152,125 +144,16 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <title>Reviews & Ratings</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .review-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .review-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
-        .review-item {
-            background: white;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            border-left: 4px solid #007cba;
-        }
-        .rating {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .stars {
-            color: #ffc107;
-            margin-right: 10px;
-        }
-        .form-section {
-            background: #e3f2fd;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-control {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .btn-primary { background-color: #007cba; color: white; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .alert {
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .rating-summary {
-            text-align: center;
-            background: #fff3cd;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #ffeaa7;
-        }
-        .rating-summary .avg-rating {
-            font-size: 2em;
-            font-weight: bold;
-            color: #856404;
-        }
-        .rating-input {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        .rating-input input[type="radio"] {
-            display: none;
-        }
-        .rating-input label {
-            font-size: 1.5em;
-            color: #ddd;
-            cursor: pointer;
-        }
-        .rating-input input[type="radio"]:checked ~ label,
-        .rating-input label:hover,
-        .rating-input label:hover ~ label {
-            color: #ffc107;
-        }
-        @media (max-width: 768px) {
-            .review-container {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
+    <?php render_header(); ?>
+
     <div class="wrapper">
         <h2>⭐ Reviews & Ratings</h2>
         <p>Share your experience and build trust in the community.</p>
         <p>
-            <a href="dashboard.php" class="btn btn-secondary">← Back to Dashboard</a>
+            <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary">← Back to Dashboard</a>
         </p>
 
         <?php if(isset($success_message)): ?>
@@ -282,23 +165,25 @@ $conn->close();
         <?php endif; ?>
 
         <!-- Rating Summary -->
-        <div class="rating-summary">
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-body" style="text-align:center;">
             <h3>Your Community Rating</h3>
-            <div class="avg-rating"><?php echo $avg_rating; ?>/5</div>
-            <div class="stars">
+            <div style="font-size:2em; font-weight:800; margin:6px 0; color:#b45309; "><?php echo $avg_rating; ?>/5</div>
+            <div class="stars" style="color:#f59e0b;">
                 <?php for($i = 1; $i <= 5; $i++): ?>
                     <span style="color: <?php echo $i <= $avg_rating ? '#ffc107' : '#ddd'; ?>;">★</span>
                 <?php endfor; ?>
             </div>
             <p>Based on <?php echo count($reviews_received); ?> review(s)</p>
+            </div>
         </div>
 
         <!-- Submit Review Form -->
         <?php if (!empty($reviewable_requests)): ?>
-            <div class="form-section">
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-body">
                 <h3>📝 Submit a Review</h3>
-                <p>You have completed transactions that can be reviewed:</p>
-                
+                <p class="muted">You have completed transactions that can be reviewed:</p>
                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
                     <div class="form-group">
                         <label for="request_id">Select Completed Request:</label>
@@ -321,7 +206,7 @@ $conn->close();
 
                     <div class="form-group">
                         <label>Rating:</label>
-                        <div class="rating-input">
+                        <div class="rating-input" style="display:flex; gap:6px;">
                             <input type="radio" name="rating" value="5" id="star5" required>
                             <label for="star5">★</label>
                             <input type="radio" name="rating" value="4" id="star4">
@@ -345,17 +230,20 @@ $conn->close();
                         <input type="submit" name="submit_review" value="📤 Submit Review" class="btn btn-primary">
                     </div>
                 </form>
+                </div>
             </div>
         <?php endif; ?>
 
         <!-- Reviews Display -->
-        <div class="review-container">
+        <div class="grid grid-2">
             <!-- Reviews Given -->
-            <div class="review-section">
+            <div class="card">
+                <div class="card-body">
                 <h3>📤 Reviews You've Given (<?php echo count($reviews_given); ?>)</h3>
                 <?php if (!empty($reviews_given)): ?>
+                    <div class="list">
                     <?php foreach($reviews_given as $review): ?>
-                        <div class="review-item">
+                        <div class="list-item">
                             <div class="rating">
                                 <div class="stars">
                                     <?php for($i = 1; $i <= 5; $i++): ?>
@@ -367,22 +255,26 @@ $conn->close();
                             <p><strong>To:</strong> <?php echo htmlspecialchars($review['reviewed_user']); ?></p>
                             <p><strong>For:</strong> <?php echo htmlspecialchars($review['resource_title'] ?: 'General review'); ?></p>
                             <p><?php echo nl2br(htmlspecialchars($review['comment'])); ?></p>
-                            <small class="text-muted">
+                            <small class="muted">
                                 <?php echo date('M j, Y g:i A', strtotime($review['review_date'])); ?>
                             </small>
                         </div>
                     <?php endforeach; ?>
+                    </div>
                 <?php else: ?>
                     <p>You haven't given any reviews yet.</p>
                 <?php endif; ?>
+                </div>
             </div>
 
             <!-- Reviews Received -->
-            <div class="review-section">
+            <div class="card">
+                <div class="card-body">
                 <h3>📥 Reviews You've Received (<?php echo count($reviews_received); ?>)</h3>
                 <?php if (!empty($reviews_received)): ?>
+                    <div class="list">
                     <?php foreach($reviews_received as $review): ?>
-                        <div class="review-item">
+                        <div class="list-item">
                             <div class="rating">
                                 <div class="stars">
                                     <?php for($i = 1; $i <= 5; $i++): ?>
@@ -394,14 +286,16 @@ $conn->close();
                             <p><strong>From:</strong> <?php echo htmlspecialchars($review['reviewer_user']); ?></p>
                             <p><strong>For:</strong> <?php echo htmlspecialchars($review['resource_title'] ?: 'General review'); ?></p>
                             <p><?php echo nl2br(htmlspecialchars($review['comment'])); ?></p>
-                            <small class="text-muted">
+                            <small class="muted">
                                 <?php echo date('M j, Y g:i A', strtotime($review['review_date'])); ?>
                             </small>
                         </div>
                     <?php endforeach; ?>
+                    </div>
                 <?php else: ?>
                     <p>You haven't received any reviews yet.</p>
                 <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
@@ -428,5 +322,6 @@ $conn->close();
             });
         });
     </script>
+</main>
 </body>
 </html>

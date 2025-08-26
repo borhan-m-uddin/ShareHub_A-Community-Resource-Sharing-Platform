@@ -1,6 +1,5 @@
 <?php
-session_start();
-require_once "config.php";
+require_once __DIR__ . '/bootstrap.php';
 
 // Check if user is logged in
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
@@ -102,286 +101,14 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM services WHERE av
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Browse Services - Community Resource Platform</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-            line-height: 1.6;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
-            color: white;
-            padding: 20px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header h1 {
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        .alert-error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .search-panel {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-
-        .search-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr auto;
-            gap: 15px;
-            align-items: end;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .form-control {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: #6f42c1;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5a32a3;
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #218838;
-        }
-
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
-        }
-
-        .service-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-
-        .service-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .service-header {
-            background: #6f42c1;
-            color: white;
-            padding: 15px;
-        }
-
-        .service-title {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .service-category {
-            opacity: 0.9;
-            font-size: 0.9em;
-        }
-
-        .service-giver {
-            opacity: 0.8;
-            font-size: 0.85em;
-            margin-top: 5px;
-        }
-
-        .service-body {
-            padding: 20px;
-        }
-
-        .service-description {
-            color: #666;
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-
-        .service-details {
-            margin-bottom: 15px;
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .detail-label {
-            font-weight: bold;
-            color: #333;
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .badge-available { background: #28a745; color: white; }
-
-        .service-actions {
-            padding: 15px;
-            background: #f8f9fa;
-            border-top: 1px solid #eee;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.3);
-        }
-
-        .modal-header {
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #6f42c1;
-        }
-
-        .modal-header h3 {
-            color: #333;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: #333;
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #6c757d;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s ease;
-        }
-
-        .back-link:hover {
-            background: #5a6268;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-
-        .empty-state h3 {
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        @media (max-width: 768px) {
-            .search-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .services-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
-    <div class="header">
-        <h1>⚙️ Browse Available Services</h1>
-        <p style="text-align: center; opacity: 0.9;">Find skills and help from your community</p>
-    </div>
+    <?php render_header(); ?>
 
-    <div class="container">
+    <div class="wrapper">
+        <h2>⚙️ Browse Available Services</h2>
+        <p>Find skills and help from your community</p>
         <?php if ($message): ?>
             <div class="alert alert-success"><?php echo htmlspecialchars($message); ?></div>
         <?php endif; ?>
@@ -391,8 +118,9 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM services WHERE av
         <?php endif; ?>
 
         <!-- Search and Filter Panel -->
-        <div class="search-panel">
-            <form method="GET" class="search-grid">
+        <div class="card">
+            <div class="card-body">
+            <form method="GET" class="grid" style="grid-template-columns: 2fr 1fr auto; gap: 15px; align-items: end;">
                 <div class="form-group">
                     <label for="search">Search Services</label>
                     <input type="text" id="search" name="search" class="form-control" 
@@ -413,43 +141,30 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM services WHERE av
                 </div>
                 <button type="submit" class="btn btn-primary">🔍 Search</button>
             </form>
+            </div>
         </div>
 
         <!-- Services List -->
         <?php if ($services_result->num_rows > 0): ?>
-            <div class="services-grid">
+            <div class="grid grid-auto">
                 <?php while ($service = $services_result->fetch_assoc()): ?>
-                    <div class="service-card">
-                        <div class="service-header">
-                            <div class="service-title"><?php echo htmlspecialchars($service['title']); ?></div>
-                            <div class="service-category"><?php echo htmlspecialchars($service['category']); ?></div>
-                            <div class="service-giver">
-                                Offered by: <?php echo htmlspecialchars($service['giver_name']); ?>
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 style="margin:0 0 6px 0;"><?php echo htmlspecialchars($service['title']); ?></h4>
+                            <div style="color:#6b7280; font-size:0.9rem; margin-bottom:8px;">
+                                <?php echo htmlspecialchars($service['category']); ?> • Offered by <?php echo htmlspecialchars($service['giver_name']); ?>
                             </div>
-                        </div>
-                        <div class="service-body">
-                            <div class="service-description">
+                            <p style="color:#4b5563; line-height:1.5; margin:8px 0 12px 0;">
                                 <?php echo htmlspecialchars($service['description']); ?>
-                            </div>
-                            <div class="service-details">
-                                <div class="detail-row">
-                                    <span class="detail-label">Status:</span>
-                                    <span class="badge badge-available">Available</span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Location:</span>
-                                    <span><?php echo htmlspecialchars($service['location']); ?></span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Posted:</span>
-                                    <span><?php echo date('M j, Y', strtotime($service['posting_date'])); ?></span>
-                                </div>
+                            </p>
+                            <div class="grid" style="gap:6px;">
+                                <div><strong>Status:</strong> <span class="badge badge-available">Available</span></div>
+                                <div><strong>Location:</strong> <?php echo htmlspecialchars($service['location']); ?></div>
+                                <div><strong>Posted:</strong> <?php echo date('M j, Y', strtotime($service['posting_date'])); ?></div>
                             </div>
                         </div>
-                        <div class="service-actions">
-                            <button class="btn btn-success" onclick="requestService(<?php echo $service['service_id']; ?>, '<?php echo htmlspecialchars($service['title']); ?>')">
-                                📞 Request Service
-                            </button>
+                        <div class="card-body" style="border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
+                            <button class="btn btn-success" onclick="requestService(<?php echo $service['service_id']; ?>, '<?php echo htmlspecialchars($service['title']); ?>')">📞 Request Service</button>
                         </div>
                     </div>
                 <?php endwhile; ?>
@@ -462,26 +177,30 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM services WHERE av
             </div>
         <?php endif; ?>
 
-        <a href="dashboard.php" class="back-link">← Back to Dashboard</a>
+    <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary" style="margin-top:16px;">← Back to Dashboard</a>
     </div>
 
     <!-- Request Service Modal -->
     <div id="requestModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-card">
             <div class="modal-header">
-                <span class="close" onclick="closeRequestModal()">&times;</span>
                 <h3>📞 Request Service</h3>
             </div>
-            <form method="POST">
-                <input type="hidden" name="action" value="request_service">
-                <input type="hidden" name="service_id" id="request_service_id">
-                <div class="form-group">
-                    <label for="request_message">Message to Service Provider</label>
-                    <textarea id="request_message" name="message" class="form-control" rows="4" 
-                              placeholder="Describe what you need help with, when you need it, and any other relevant details..."></textarea>
-                </div>
-                <button type="submit" class="btn btn-success">📞 Send Request</button>
-            </form>
+            <div class="modal-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="request_service">
+                    <input type="hidden" name="service_id" id="request_service_id">
+                    <div class="form-group">
+                        <label for="request_message">Message to Service Provider</label>
+                        <textarea id="request_message" name="message" class="form-control" rows="4" 
+                                  placeholder="Describe what you need help with, when you need it, and any other relevant details..."></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-default" onclick="closeRequestModal()">Cancel</button>
+                        <button type="submit" class="btn btn-success">📞 Send Request</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -503,6 +222,7 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM services WHERE av
             }
         }
     </script>
+    </main>
 </body>
 </html>
 

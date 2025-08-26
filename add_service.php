@@ -1,14 +1,10 @@
 <?php
-// Initialize the session
-session_start();
-
+require_once __DIR__ . '/bootstrap.php';
 // Check if the user is logged in and is a Giver, otherwise redirect to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== "giver"){
-    header("location: login.php");
+    header("location: " . site_href('login.php'));
     exit;
 }
-
-require_once "config.php";
 
 $title = $description = $category = $expertise_level = $availability = $preferred_exchange = "";
 $title_err = $description_err = $category_err = $expertise_level_err = $availability_err = $preferred_exchange_err = "";
@@ -98,13 +94,14 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 <head>
     <meta charset="UTF-8">
     <title>Add New Service</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
+    <?php render_header(); ?>
     <div class="wrapper">
         <h2>Add New Service</h2>
         <p>Please fill this form to offer a new service for sharing.</p>
-        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
             <div class="form-group <?php echo (!empty($title_err)) ? 'has-error' : ''; ?>">
                 <label>Service Title</label>
                 <input type="text" name="title" class="form-control" value="<?php echo $title; ?>">
@@ -144,10 +141,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             </div>
             <div class="form-group">
                 <input type="submit" class="btn btn-primary" value="Add Service">
-                <a href="dashboard.php" class="btn btn-default">Cancel</a>
+                <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-default">Cancel</a>
             </div>
         </form>
     </div>
+    <?php render_footer(); ?>
 </body>
 </html>
 

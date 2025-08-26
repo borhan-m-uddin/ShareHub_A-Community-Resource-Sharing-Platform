@@ -1,14 +1,6 @@
 <?php
-// Initialize the session
-session_start();
-
-// Check if the user is logged in
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
-    header("location: login.php");
-    exit;
-}
-
-require_once "config.php";
+require_once __DIR__ . '/bootstrap.php';
+require_login();
 
 $messages = [];
 $user_id = $_SESSION["user_id"];
@@ -84,7 +76,7 @@ if($stmt = $conn->prepare($sql)){
     $stmt->close();
 }
 
-$conn->close();
+// Keep connection open
 ?>
 
 <!DOCTYPE html>
@@ -92,131 +84,16 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <title>Messages</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        .message-container {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .compose-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-        }
-        .messages-section {
-            background: #ffffff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        .message-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-        }
-        .message-item:hover {
-            background-color: #f5f5f5;
-        }
-        .message-item.unread {
-            background-color: #e3f2fd;
-            font-weight: bold;
-        }
-        .message-item.sent {
-            background-color: #f1f8e9;
-        }
-        .message-header {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        .message-type {
-            font-size: 0.8em;
-            padding: 2px 8px;
-            border-radius: 12px;
-            color: white;
-        }
-        .message-type.sent {
-            background-color: #4caf50;
-        }
-        .message-type.received {
-            background-color: #2196f3;
-        }
-        .message-subject {
-            font-weight: bold;
-            color: #333;
-        }
-        .message-preview {
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 5px;
-        }
-        .message-date {
-            font-size: 0.8em;
-            color: #999;
-            text-align: right;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-control {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .btn-primary {
-            background-color: #007cba;
-            color: white;
-        }
-        .btn-success {
-            background-color: #28a745;
-            color: white;
-        }
-        .alert {
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        @media (max-width: 768px) {
-            .message-container {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
+    <?php render_header(); ?>
+
     <div class="wrapper">
         <h2>💬 Messages</h2>
         <p>Send and receive messages with other community members.</p>
         <p>
-            <a href="dashboard.php" class="btn btn-secondary">← Back to Dashboard</a>
+            <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary">← Back to Dashboard</a>
         </p>
 
         <?php if(isset($success_message)): ?>
@@ -227,9 +104,10 @@ $conn->close();
             <div class="alert alert-danger"><?php echo $error_message; ?></div>
         <?php endif; ?>
 
-        <div class="message-container">
+        <div class="grid grid-2">
             <!-- Compose Message Section -->
-            <div class="compose-section">
+            <div class="card">
+                <div class="card-body">
                 <h3>✍️ Compose Message</h3>
                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
                     <div class="form-group">
@@ -266,13 +144,14 @@ $conn->close();
                         <input type="submit" name="send_message" value="📤 Send Message" class="btn btn-primary">
                     </div>
                 </form>
+                </div>
             </div>
 
             <!-- Messages List Section -->
-            <div class="messages-section">
-                <div style="padding: 15px; background-color: #f8f9fa; border-bottom: 1px solid #ddd;">
+            <div class="card" style="max-height: 640px; overflow-y:auto;">
+                <div class="card-body" style="border-bottom:1px solid var(--border);">
                     <h3>📬 Your Messages</h3>
-                    <p style="margin: 0; font-size: 0.9em; color: #666;">
+                    <p class="muted" style="margin:0;">
                         <?php 
                         $unread_count = count(array_filter($messages, function($msg) { 
                             return $msg['message_type'] == 'received' && $msg['is_read'] == 0; 
@@ -286,50 +165,51 @@ $conn->close();
                 </div>
 
                 <?php if (!empty($messages)): ?>
+                    <div class="list">
                     <?php foreach($messages as $message): ?>
-                        <div class="message-item <?php echo $message['message_type']; ?> <?php echo ($message['message_type'] == 'received' && $message['is_read'] == 0) ? 'unread' : ''; ?>"
-                             onclick="toggleMessage(<?php echo $message['message_id']; ?>)">
-                            <div class="message-header">
-                                <span class="message-type <?php echo $message['message_type']; ?>">
+                        <div class="list-item" onclick="toggleMessage(<?php echo $message['message_id']; ?>)">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                                <span class="badge <?php echo $message['message_type'] == 'sent' ? 'badge-success' : 'badge-primary'; ?>">
                                     <?php echo ucfirst($message['message_type']); ?>
                                 </span>
-                                <span class="message-date">
+                                <span class="muted" style="font-size:0.85rem;">
                                     <?php echo date('M j, Y g:i A', strtotime($message['sent_date'])); ?>
                                 </span>
                             </div>
-                            <div class="message-subject">
+                            <div style="font-weight:800; color:#0f172a;">
                                 <?php echo htmlspecialchars($message['subject']); ?>
                             </div>
-                            <div style="font-size: 0.9em; color: #666; margin-top: 3px;">
+                            <div class="muted" style="margin-top:3px;">
                                 <?php echo $message['message_type'] == 'sent' ? 'To: ' : 'From: '; ?>
                                 <strong><?php echo htmlspecialchars($message['other_user']); ?></strong>
                                 <?php if($message['request_id']): ?>
                                     | Request #<?php echo $message['request_id']; ?>
                                 <?php endif; ?>
                             </div>
-                            <div class="message-preview">
-                                <?php echo htmlspecialchars(substr($message['message_content'], 0, 100)); ?>
-                                <?php echo strlen($message['message_content']) > 100 ? '...' : ''; ?>
+                            <div class="muted" style="font-size:0.95rem; margin-top:6px;">
+                                <?php echo htmlspecialchars(substr($message['message_content'], 0, 160)); ?>
+                                <?php echo strlen($message['message_content']) > 160 ? '...' : ''; ?>
                             </div>
                             
                             <!-- Full message content (hidden by default) -->
-                            <div id="message-full-<?php echo $message['message_id']; ?>" style="display: none; margin-top: 10px; padding: 10px; background-color: #fff; border-radius: 4px; border: 1px solid #ddd;">
+                            <div id="message-full-<?php echo $message['message_id']; ?>" style="display: none; margin-top: 10px; padding: 10px; background-color: var(--card); border-radius: 8px; border: 1px solid var(--border);">
                                 <strong>Full Message:</strong><br>
                                 <?php echo nl2br(htmlspecialchars($message['message_content'])); ?>
                                 
                                 <?php if($message['message_type'] == 'received' && $message['is_read'] == 0): ?>
                                     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" style="margin-top: 10px;">
                                         <input type="hidden" name="message_id" value="<?php echo $message['message_id']; ?>">
-                                        <input type="submit" name="mark_read" value="Mark as Read" class="btn btn-success" style="font-size: 0.8em; padding: 5px 10px;">
+                                        <input type="submit" name="mark_read" value="Mark as Read" class="btn btn-success btn-sm">
                                     </form>
                                 <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
+                    </div>
                 <?php else: ?>
-                    <div style="padding: 20px; text-align: center; color: #666;">
-                        <strong>No messages yet</strong><br>
-                        Start a conversation by sending a message to another community member!
+                    <div class="empty-state">
+                        <h3>No messages yet</h3>
+                        <p>Start a conversation by sending a message to another community member!</p>
                     </div>
                 <?php endif; ?>
             </div>
@@ -346,5 +226,6 @@ $conn->close();
             }
         }
     </script>
+</main>
 </body>
 </html>

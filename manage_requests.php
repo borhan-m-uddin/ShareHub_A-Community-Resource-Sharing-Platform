@@ -1,5 +1,6 @@
 <?php
-include_once 'bootstrap.php';
+require_once __DIR__ . '/bootstrap.php';
+require_login();
 
 if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || ($_SESSION["role"] ?? '') !== "giver") {
     header("location: login.php");
@@ -76,10 +77,10 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <title>Manage Requests</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
-    <?php include_once 'header.php'; ?>
+    <?php render_header(); ?>
     <div class="wrapper">
         <h2>📨 Manage Incoming Requests</h2>
         <p>Review and respond to requests for your items and services.</p>

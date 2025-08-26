@@ -1,5 +1,6 @@
 <?php
-require_once __DIR__ . "/bootstrap.php";
+require_once __DIR__ . '/bootstrap.php';
+require_login();
 
 // Check if user is logged in and is giver or admin
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || 

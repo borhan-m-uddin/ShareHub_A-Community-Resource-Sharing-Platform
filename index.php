@@ -1,7 +1,6 @@
 <?php
-// Make About page the home. If POST login attempt exists, handle login logic; otherwise redirect to about.php
-session_start();
-require_once "config.php";
+// Make About page the home. Use bootstrap for session/db.
+require_once __DIR__ . '/bootstrap.php';
 
 // If a login POST occurred, process it and redirect to dashboard on success
 if ($_SERVER["REQUEST_METHOD"] === 'POST' && isset($_POST['username']) && isset($_POST['password'])) {
@@ -21,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] === 'POST' && isset($_POST['username']) && isset(
                         $_SESSION["user_id"] = $user_id;
                         $_SESSION["username"] = $stored_username;
                         $_SESSION["role"] = $role;
-                        header('Location: dashboard.php');
+                        header('Location: ' . site_href('dashboard.php'));
                         exit;
                     }
                 }
@@ -33,6 +32,6 @@ if ($_SERVER["REQUEST_METHOD"] === 'POST' && isset($_POST['username']) && isset(
 }
 
 // For GET and other requests, redirect to about.php as home
-header('Location: about.php');
+header('Location: ' . site_href('about.php'));
 exit;
 ?>

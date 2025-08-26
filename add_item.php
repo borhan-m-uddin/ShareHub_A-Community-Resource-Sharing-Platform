@@ -1,6 +1,6 @@
 <?php
 // Central bootstrap and auth
-include_once 'bootstrap.php';
+require_once __DIR__ . '/bootstrap.php';
 
 // Require giver role
 if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || ($_SESSION["role"] ?? '') !== "giver") {
@@ -146,13 +146,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <title>Add New Item</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
+    <?php render_header(); ?>
     <div class="wrapper">
         <h2>Add New Item</h2>
         <p>Please fill this form to add a new item for sharing.</p>
-        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" enctype="multipart/form-data">
+    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" enctype="multipart/form-data">
             <div class="form-group <?php echo (!empty($title_err)) ? 'has-error' : ''; ?>">
                 <label>Title</label>
                 <input type="text" name="title" class="form-control" value="<?php echo htmlspecialchars($title, ENT_QUOTES); ?>">
@@ -198,10 +199,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             <div class="form-group">
                 <input type="submit" class="btn btn-primary" value="Add Item">
-                <a href="dashboard.php" class="btn btn-default">Cancel</a>
+                <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-default">Cancel</a>
             </div>
         </form>
     </div>
+    <?php render_footer(); ?>
 </body>
 </html>
 

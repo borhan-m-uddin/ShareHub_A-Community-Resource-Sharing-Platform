@@ -108,304 +108,14 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Browse Items - Community Resource Platform</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-            line-height: 1.6;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-            color: white;
-            padding: 20px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header h1 {
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        .alert-error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .search-panel {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-
-        .search-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr auto;
-            gap: 15px;
-            align-items: end;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .form-control {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: #007bff;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #0056b3;
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #218838;
-        }
-
-        .btn-sm {
-            padding: 5px 10px;
-            font-size: 12px;
-        }
-
-        .items-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
-        }
-
-        .item-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-
-        .item-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .item-header {
-            background: #007bff;
-            color: white;
-            padding: 15px;
-        }
-
-        .item-title {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .item-category {
-            opacity: 0.9;
-            font-size: 0.9em;
-        }
-
-        .item-giver {
-            opacity: 0.8;
-            font-size: 0.85em;
-            margin-top: 5px;
-        }
-
-        .item-body {
-            padding: 20px;
-        }
-
-        .item-image {
-            width: 100%;
-            max-height: 220px;
-            object-fit: cover;
-            border-bottom: 1px solid #eee;
-            display: block;
-            background: #fafafa;
-        }
-
-        .item-description {
-            color: #666;
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-
-        .item-details {
-            margin-bottom: 15px;
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .detail-label {
-            font-weight: bold;
-            color: #333;
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .badge-new { background: #17a2b8; color: white; }
-        .badge-like_new { background: #20c997; color: white; }
-        .badge-good { background: #28a745; color: white; }
-        .badge-fair { background: #ffc107; color: #333; }
-        .badge-poor { background: #dc3545; color: white; }
-
-        .item-actions {
-            padding: 15px;
-            background: #f8f9fa;
-            border-top: 1px solid #eee;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.3);
-        }
-
-        .modal-header {
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #007bff;
-        }
-
-        .modal-header h3 {
-            color: #333;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: #333;
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #6c757d;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s ease;
-        }
-
-        .back-link:hover {
-            background: #5a6268;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-
-        .empty-state h3 {
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        @media (max-width: 768px) {
-            .search-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .items-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
-    <div class="header">
-        <h1>🛍️ Browse Available Items</h1>
-        <p style="text-align: center; opacity: 0.9;">Find items shared by your community</p>
-    </div>
+    <?php render_header(); ?>
 
-    <div class="container">
+    <div class="wrapper">
+        <h2>🛍️ Browse Available Items</h2>
+        <p>Find items shared by your community</p>
         <?php if ($message): ?>
             <div class="alert alert-success"><?php echo htmlspecialchars($message); ?></div>
         <?php endif; ?>
@@ -415,8 +125,9 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
         <?php endif; ?>
 
         <!-- Search and Filter Panel -->
-        <div class="search-panel">
-            <form method="GET" class="search-grid">
+        <div class="card">
+            <div class="card-body">
+            <form method="GET" class="grid" style="grid-template-columns: 2fr 1fr 1fr auto; gap: 15px; align-items: end;">
                 <div class="form-group">
                     <label for="search">Search Items</label>
                     <input type="text" id="search" name="search" class="form-control" 
@@ -448,48 +159,36 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
                 </div>
                 <button type="submit" class="btn btn-primary">🔍 Search</button>
             </form>
+            </div>
         </div>
 
         <!-- Items List -->
         <?php if ($items_result->num_rows > 0): ?>
-            <div class="items-grid">
+            <div class="grid grid-auto">
                 <?php while ($item = $items_result->fetch_assoc()): ?>
-                    <div class="item-card">
-                        <div class="item-header">
-                            <div class="item-title"><?php echo htmlspecialchars($item['title']); ?></div>
-                            <div class="item-category"><?php echo htmlspecialchars($item['category']); ?></div>
-                            <div class="item-giver">
-                                Shared by: <?php echo htmlspecialchars($item['giver_name']); ?>
+                    <div class="card">
+                        <?php if (!empty($item['image_url'])): ?>
+                            <img class="item-image" src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
+                        <?php endif; ?>
+                        <div class="card-body">
+                            <h4 style="margin:0 0 6px 0;"><?php echo htmlspecialchars($item['title']); ?></h4>
+                            <div style="color:#6b7280; font-size:0.9rem; margin-bottom:8px;">
+                                <?php echo htmlspecialchars($item['category']); ?> • Shared by <?php echo htmlspecialchars($item['giver_name']); ?>
                             </div>
-                        </div>
-                        <div class="item-body">
                             <?php if (!empty($item['image_url'])): ?>
-                                <img class="item-image" src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
+                                
                             <?php endif; ?>
-                            <div class="item-description">
+                            <p style="color:#4b5563; line-height:1.5; margin:8px 0 12px 0;">
                                 <?php echo htmlspecialchars($item['description']); ?>
-                            </div>
-                            <div class="item-details">
-                                <div class="detail-row">
-                                    <span class="detail-label">Condition:</span>
-                                    <span class="badge badge-<?php echo $item['condition_status']; ?>">
-                                        <?php echo ucfirst(str_replace('_', ' ', $item['condition_status'])); ?>
-                                    </span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Pickup Location:</span>
-                                    <span><?php echo htmlspecialchars($item['pickup_location']); ?></span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Posted:</span>
-                                    <span><?php echo date('M j, Y', strtotime($item['posting_date'])); ?></span>
-                                </div>
+                            </p>
+                            <div class="grid" style="gap:6px;">
+                                <div><strong>Condition:</strong> <span class="badge badge-<?php echo $item['condition_status']; ?>"><?php echo ucfirst(str_replace('_', ' ', $item['condition_status'])); ?></span></div>
+                                <div><strong>Pickup:</strong> <?php echo htmlspecialchars($item['pickup_location']); ?></div>
+                                <div><strong>Posted:</strong> <?php echo date('M j, Y', strtotime($item['posting_date'])); ?></div>
                             </div>
                         </div>
-                        <div class="item-actions">
-                            <button class="btn btn-success" onclick="requestItem(<?php echo $item['item_id']; ?>, '<?php echo htmlspecialchars($item['title']); ?>')">
-                                📨 Request Item
-                            </button>
+                        <div class="card-body" style="border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
+                            <button class="btn btn-success" onclick="requestItem(<?php echo $item['item_id']; ?>, '<?php echo htmlspecialchars($item['title']); ?>')">📨 Request Item</button>
                         </div>
                     </div>
                 <?php endwhile; ?>
@@ -502,26 +201,30 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
             </div>
         <?php endif; ?>
 
-        <a href="dashboard.php" class="back-link">← Back to Dashboard</a>
+    <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary" style="margin-top:16px;">← Back to Dashboard</a>
     </div>
 
     <!-- Request Item Modal -->
     <div id="requestModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-card">
             <div class="modal-header">
-                <span class="close" onclick="closeRequestModal()">&times;</span>
                 <h3>📨 Request Item</h3>
             </div>
-            <form method="POST">
-                <input type="hidden" name="action" value="request_item">
-                <input type="hidden" name="item_id" id="request_item_id">
-                <div class="form-group">
-                    <label for="request_message">Message to Owner</label>
-                    <textarea id="request_message" name="message" class="form-control" rows="4" 
-                              placeholder="Tell the owner why you need this item and when you can pick it up..."></textarea>
-                </div>
-                <button type="submit" class="btn btn-success">📨 Send Request</button>
-            </form>
+            <div class="modal-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="request_item">
+                    <input type="hidden" name="item_id" id="request_item_id">
+                    <div class="form-group">
+                        <label for="request_message">Message to Owner</label>
+                        <textarea id="request_message" name="message" class="form-control" rows="4" 
+                                  placeholder="Tell the owner why you need this item and when you can pick it up..."></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-default" onclick="closeRequestModal()">Cancel</button>
+                        <button type="submit" class="btn btn-success">📨 Send Request</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -543,6 +246,7 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
             }
         }
     </script>
+    </main>
 </body>
 </html>
 

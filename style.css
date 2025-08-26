@@ -1,3 +1,73 @@
+/* Explicit theme override: set data-theme='dark' on html to force dark mode;
+    omit or set to 'light' to use base variables and OS preference. */
+html[data-theme='dark'] {
+    --bg: #0b1220;
+    --card: #0f172a;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --border: #1f2937;
+    --shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+html[data-theme='dark'] .site-header { background: rgba(15,23,42,0.9); border-bottom-color:#1f2937; }
+html[data-theme='dark'] .site-nav a { color:#e5e7eb; }
+html[data-theme='dark'] .site-nav a:hover { background:#111827; color:#93c5fd; }
+html[data-theme='dark'] .form-control { background:#111827; color:#e5e7eb; border-color:#1f2937; }
+html[data-theme='dark'] .wrapper, html[data-theme='dark'] .card { border-color:#1f2937; }
+/* High-specificity dark table overrides for all lists when forced dark mode */
+html[data-theme='dark'] body .table th, html[data-theme='dark'] body .request-table th, html[data-theme='dark'] body .services-table th, html[data-theme='dark'] body .reviews-table th, html[data-theme='dark'] body .messages-table th, html[data-theme='dark'] body .users-table th { background:#0b1220 !important; color:#e5e7eb; }
+html[data-theme='dark'] body .table td, html[data-theme='dark'] body .request-table td, html[data-theme='dark'] body .services-table td, html[data-theme='dark'] body .reviews-table td, html[data-theme='dark'] body .messages-table td, html[data-theme='dark'] body .users-table td { background:#0f172a !important; color:#e5e7eb; }
+html[data-theme='dark'] body .table th, html[data-theme='dark'] body .table td,
+html[data-theme='dark'] body .request-table th, html[data-theme='dark'] body .request-table td,
+html[data-theme='dark'] body .services-table th, html[data-theme='dark'] body .services-table td,
+html[data-theme='dark'] body .reviews-table th, html[data-theme='dark'] body .reviews-table td,
+html[data-theme='dark'] body .messages-table th, html[data-theme='dark'] body .messages-table td,
+html[data-theme='dark'] body .users-table th, html[data-theme='dark'] body .users-table td { border-color:#1f2937 !important; }
+html[data-theme='dark'] body .table tr:nth-child(even) td,
+html[data-theme='dark'] body .request-table tr:nth-child(even) td,
+html[data-theme='dark'] body .services-table tr:nth-child(even) td,
+html[data-theme='dark'] body .reviews-table tr:nth-child(even) td,
+html[data-theme='dark'] body .messages-table tr:nth-child(even) td,
+html[data-theme='dark'] body .users-table tr:nth-child(even) td { background:#111827 !important; }
+html[data-theme='dark'] h1, html[data-theme='dark'] h2, html[data-theme='dark'] h3, html[data-theme='dark'] h4 { color: var(--text); }
+html[data-theme='dark'] p { color: #cbd5e1; }
+html[data-theme='dark'] .brand-sub { color: #9ca3af; }
+html[data-theme='dark'] .card .card-header, html[data-theme='dark'] .card .card-body { color: var(--text); }
+html[data-theme='dark'] .dashboard-links a { color: var(--text); }
+html[data-theme='dark'] a { color: #93c5fd; }
+/* Make dark-mode logos visible if only a light logo asset exists */
+html[data-theme='dark'] .site-logo,
+html[data-theme='dark'] .brand-banner-logo {
+    filter: invert(1) brightness(1.15) contrast(1.05);
+}
+
+/* Force light theme when explicitly chosen */
+html[data-theme='light'] {
+    --bg: #f6f8fb;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #6b7280;
+    --border: #e6e9ef;
+    --shadow: 0 6px 20px rgba(20, 30, 50, 0.06);
+}
+html[data-theme='light'] .site-header { background: #fff; border-bottom-color:#eef2f7; }
+html[data-theme='light'] .site-nav a { color:#0f172a; }
+html[data-theme='light'] .site-nav a:hover { color:#2563eb; background:#eef2ff; }
+html[data-theme='light'] .form-control { background:#fff; color:#0f172a; border-color:#e6e9ef; }
+html[data-theme='light'] .wrapper, html[data-theme='light'] .card { border-color:#e6e9ef; }
+html[data-theme='light'] body .table th, html[data-theme='light'] body .request-table th, html[data-theme='light'] body .services-table th, html[data-theme='light'] body .reviews-table th, html[data-theme='light'] body .messages-table th, html[data-theme='light'] body .users-table th { background:#f8fafc !important; color:#0f172a; }
+html[data-theme='light'] body .table td, html[data-theme='light'] body .request-table td, html[data-theme='light'] body .services-table td, html[data-theme='light'] body .reviews-table td, html[data-theme='light'] body .messages-table td, html[data-theme='light'] body .users-table td { background:#ffffff !important; color:#0f172a; }
+html[data-theme='light'] body .table th, html[data-theme='light'] body .table td,
+html[data-theme='light'] body .request-table th, html[data-theme='light'] body .request-table td,
+html[data-theme='light'] body .services-table th, html[data-theme='light'] body .services-table td,
+html[data-theme='light'] body .reviews-table th, html[data-theme='light'] body .reviews-table td,
+html[data-theme='light'] body .messages-table th, html[data-theme='light'] body .messages-table td,
+html[data-theme='light'] body .users-table th, html[data-theme='light'] body .users-table td { border-color:#eef2f7 !important; }
+html[data-theme='light'] body .table tr:nth-child(even) td,
+html[data-theme='light'] body .request-table tr:nth-child(even) td,
+html[data-theme='light'] body .services-table tr:nth-child(even) td,
+html[data-theme='light'] body .reviews-table tr:nth-child(even) td,
+html[data-theme='light'] body .messages-table tr:nth-child(even) td,
+html[data-theme='light'] body .users-table tr:nth-child(even) td { background:#fbfcfe !important; }
 /*
     Global Theme Refresh
     - Modern palette via CSS variables
@@ -78,6 +148,21 @@ label { display:block; margin-bottom:6px; color:#374151; font-weight:600; font-s
 }
 .help-block { color:#b91c1c; font-size:0.9rem; margin-top:6px; display:block; }
 
+/* Filter/Search bar */
+.filter-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:10px 12px; background: linear-gradient(0deg, rgba(255,255,255,0.75), rgba(255,255,255,0.75)); border:1px solid var(--border); border-radius:12px; box-shadow: 0 2px 10px rgba(16,24,40,0.06); }
+.filter-bar .form-control { min-width: 180px; max-width: 280px; background:#fff; }
+.filter-bar input[type="date"].form-control { min-width:160px; max-width:200px; }
+.filter-bar .btn { height:40px; }
+.filter-bar select.form-control { appearance:none; background-image: url('data:image/svg+xml;utf8,<svg fill="%236b7280" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>'); background-repeat:no-repeat; background-position: right 10px center; background-size:14px; padding-right:30px; }
+
+/* Dark mode support for filter bar */
+html[data-theme='dark'] .filter-bar { background: rgba(15,23,42,0.6); border-color:#1f2937; }
+html[data-theme='dark'] .filter-bar .form-control { background:#111827; color:#e5e7eb; border-color:#1f2937; }
+@media (prefers-color-scheme: dark) {
+    .filter-bar { background: rgba(15,23,42,0.6); border-color:#1f2937; }
+    .filter-bar .form-control { background:#111827; color:#e5e7eb; border-color:#1f2937; }
+}
+
 /* Buttons */
 .btn { display:inline-block; padding:10px 16px; border-radius:10px; border:0; cursor:pointer; font-weight:700; letter-spacing:.2px; transition: transform .06s ease, box-shadow .2s ease, background .2s ease; }
 .btn:hover { transform: translateY(-1px); }
@@ -86,6 +171,9 @@ label { display:block; margin-bottom:6px; color:#374151; font-weight:600; font-s
 
 .btn-primary { background: var(--primary); color:#fff; }
 .btn-primary:hover { background: var(--primary-600); }
+
+.btn-secondary { background:#6b7280; color:#fff; }
+.btn-secondary:hover { background:#4b5563; }
 
 .btn-default { background:#374151; color:#fff; }
 .btn-default:hover { background:#111827; }
@@ -101,6 +189,7 @@ label { display:block; margin-bottom:6px; color:#374151; font-weight:600; font-s
 
 .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
 .btn-outline:hover { background: var(--primary); color:#fff; }
+.btn-sm { padding:6px 10px; font-size:0.85rem; border-radius:8px; }
 
 /* Links */
 a { color:#2563eb; text-decoration:none; }
@@ -118,10 +207,21 @@ a:hover { text-decoration:underline; }
 .dashboard-links a { flex:1 1 240px; padding:12px; background:#f8fafc; border-radius:8px; box-shadow:0 1px 0 rgba(16,24,40,0.03); color:#0f172a; }
 
 /* Tables */
-.request-table { width:100%; border-collapse:collapse; margin-top:12px; }
-.request-table th, .request-table td { border:1px solid #eef2f7; padding:10px 12px; text-align:left; vertical-align:middle; }
-.request-table th { background:#f8fafc; color:#0f172a; font-weight:700; }
-.request-table tr:nth-child(even) td { background:#fbfcfe; }
+/* Unified table styles across list pages */
+.table, .request-table, .services-table, .reviews-table, .messages-table, .users-table { width:100%; border-collapse:collapse; margin-top:12px; }
+.table th, .table td,
+.request-table th, .request-table td,
+.services-table th, .services-table td,
+.reviews-table th, .reviews-table td,
+.messages-table th, .messages-table td,
+.users-table th, .users-table td { border:1px solid #eef2f7; padding:10px 12px; text-align:left; vertical-align:middle; }
+.table th, .request-table th, .services-table th, .reviews-table th, .messages-table th, .users-table th { background:#f8fafc; color:#0f172a; font-weight:700; }
+.table tr:nth-child(even) td,
+.request-table tr:nth-child(even) td,
+.services-table tr:nth-child(even) td,
+.reviews-table tr:nth-child(even) td,
+.messages-table tr:nth-child(even) td,
+.users-table tr:nth-child(even) td { background:#fbfcfe; }
 
 .status-pending { color:#b45309; font-weight:700; }
 .status-approved { color:#15803d; font-weight:700; }
@@ -134,6 +234,13 @@ a:hover { text-decoration:underline; }
 .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:0.8rem; color:#fff; font-weight:700; letter-spacing:.2px; }
 .badge-primary { background:#2563eb; }
 .badge-info { background:#06b6d4; }
+.badge-success { background:#22c55e; }
+/* Role/status badges (admin area) */
+.badge-admin { background:#dc2626; }
+.badge-giver { background:#22c55e; }
+.badge-seeker { background:#2563eb; }
+.badge-approved { background:#22c55e; }
+.badge-rejected { background:#dc2626; }
 
 /* Condition/availability badges (used in item cards) */
 .badge-new { background:#0ea5e9; }
@@ -156,11 +263,25 @@ a:hover { text-decoration:underline; }
 .grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
 .grid-auto { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 
+/* Simple vertical list */
+.list { background: var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.list .list-item { padding:14px 16px; border-bottom:1px solid var(--border); }
+.list .list-item:last-child { border-bottom:0; }
+.list .list-item:hover { background:#f8fafc; }
+
+/* Muted text */
+.muted { color: var(--muted); }
+
+/* Empty state utility */
+.empty-state { text-align:center; padding:48px 16px; color: var(--muted); }
+.empty-state h3 { margin: 0 0 8px 0; color: var(--text); }
+
 /* Responsive */
 @media (max-width:800px){
     .wrapper { margin:12px; padding:16px; }
     .dashboard-links a { flex:1 1 100%; }
     .request-table th, .request-table td { font-size:0.92rem; padding:8px; }
+    .grid-2 { grid-template-columns: 1fr; }
 }
 
 /* small helper to reuse old login styles if pages use .card-centered */
@@ -170,7 +291,7 @@ a:hover { text-decoration:underline; }
 .site-header { background: #fff; border-bottom: 1px solid #eef2f7; position: sticky; top:0; z-index: 50; backdrop-filter: saturate(140%) blur(6px); }
 .site-header .container { max-width:1100px; margin:0 auto; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; }
 .brand { display:flex; align-items:center; gap:12px; }
-.site-logo { width:48px; height:48px; display:block; }
+.site-logo { width:350px; height:auto; display:block; }
 .brand-title { font-size:1.25rem; font-weight:800; color:#0f172a; }
 .brand-sub { font-size:0.85rem; color:#6b7280; margin-top:2px; }
 .site-nav a { margin-left:12px; color:#0f172a; font-weight:700; text-decoration:none; padding:8px 10px; border-radius:8px; transition: background .2s ease, color .2s ease; }
@@ -183,7 +304,7 @@ a:hover { text-decoration:underline; }
 
 /* Brand banner used on simple pages */
 .brand-banner { display:flex; align-items:center; gap:12px; padding:18px 50px; }
-.brand-banner-logo { width:56px; height:56px; display:block; }
+.brand-banner-logo { width:300px; height:70px; display:block; }
 .brand-banner-text .brand-banner-title { font-size:1.15rem; font-weight:800; color:#0f172a; }
 .brand-banner-text .brand-banner-sub { font-size:0.85rem; color:#6b7280; }
 
@@ -219,8 +340,33 @@ footer.site-footer { color:#6b7280; }
     .site-nav a:hover { background:#111827; color:#93c5fd; }
     .form-control { background:#111827; color:#e5e7eb; border-color:#1f2937; }
     .wrapper, .card { border-color:#1f2937; }
-    .request-table th { background:#0b1220; color:#e5e7eb; }
-    .request-table td { background:#0f172a; color:#e5e7eb; }
+    .list { border-color:#1f2937; }
+    .list .list-item { border-bottom-color:#1f2937; }
+    .list .list-item:hover { background:#111827; }
+    /* High-specificity dark table overrides for all lists */
+    body .table th, body .request-table th, body .services-table th, body .reviews-table th, body .messages-table th, body .users-table th { background:#0b1220 !important; color:#e5e7eb; }
+    body .table td, body .request-table td, body .services-table td, body .reviews-table td, body .messages-table td, body .users-table td { background:#0f172a !important; color:#e5e7eb; }
+    body .table th, body .table td,
+    body .request-table th, body .request-table td,
+    body .services-table th, body .services-table td,
+    body .reviews-table th, body .reviews-table td,
+    body .messages-table th, body .messages-table td,
+    body .users-table th, body .users-table td { border-color:#1f2937 !important; }
+    body .table tr:nth-child(even) td,
+    body .request-table tr:nth-child(even) td,
+    body .services-table tr:nth-child(even) td,
+    body .reviews-table tr:nth-child(even) td,
+    body .messages-table tr:nth-child(even) td,
+    body .users-table tr:nth-child(even) td { background:#111827 !important; }
+    
+    /* Improve text contrast on dark backgrounds */
+    h1, h2, h3, h4 { color: var(--text); }
+    p { color: #cbd5e1; }
+    .brand-sub { color: #9ca3af; }
+    .card .card-header, .card .card-body { color: var(--text); }
+    .dashboard-links a { color: var(--text); }
+    /* General link color in dark for readability */
+    a { color: #93c5fd; }
 }
 
 

@@ -1,10 +1,9 @@
-<?php include_once 'bootstrap.php';
+<?php require_once __DIR__ . '/bootstrap.php';
 // Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: login.php");
     exit;
 }
-include_once 'brand.php';
 
 $username = $email = $first_name = $last_name = $phone = $address = "";
 $username_err = $email_err = $first_name_err = $last_name_err = $phone_err = $address_err = "";
@@ -129,9 +128,10 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 <head>
     <meta charset="UTF-8">
     <title>Manage Profile</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
+    <?php render_header(); ?>
     <div class="wrapper">
         <h2>Manage Your Profile</h2>
         <p>Update your account information below.</p>
@@ -173,6 +173,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         </form>
         <p><a href="reset_password.php">Reset Your Password</a></p>
     </div>
+    </main>
 </body>
 </html>
 

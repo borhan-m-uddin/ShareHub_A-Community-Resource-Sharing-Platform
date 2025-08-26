@@ -138,10 +138,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <title>Register</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
-    <?php include_once 'brand.php'; ?>
+    <?php render_header(); ?>
     <div class="wrapper">
         <h2>Register</h2>
         <p>Please fill this form to create an account.</p>
@@ -181,6 +181,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <p>Already have an account? <a href="login.php">Login here</a>.</p>
         </form>
     </div>
+    </main>
 </body>
 </html>
 

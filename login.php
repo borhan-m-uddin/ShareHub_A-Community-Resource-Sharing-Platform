@@ -1,4 +1,4 @@
-<?php include_once 'bootstrap.php';
+<?php require_once __DIR__ . '/bootstrap.php';
 // Check if the user is already logged in, if yes then redirect him to welcome page
 if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
     header("location: dashboard.php");
@@ -79,21 +79,24 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $conn->close();
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
-    <?php include_once 'brand.php'; ?>
+    <?php render_header(); ?>
     <div class="wrapper">
         <h2>Login</h2>
         <p>Please fill in your credentials to login.</p>
 
         <?php
+        if(!empty($_SESSION['flash_success'])){
+            echo '<div class="alert alert-success">' . htmlspecialchars($_SESSION['flash_success']) . '</div>';
+            unset($_SESSION['flash_success']);
+        }
         if(!empty($login_err)){
             echo "<div class=\"alert alert-danger\">" . $login_err . "</div>";
         }
@@ -116,6 +119,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <p>Don't have an account? <a href="register.php">Sign up now</a>.</p>
         </form>
     </div>
+    </main>
 </body>
 </html>
 

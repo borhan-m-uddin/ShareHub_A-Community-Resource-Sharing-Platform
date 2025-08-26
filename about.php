@@ -1,4 +1,4 @@
-<?php include_once 'bootstrap.php';
+<?php require_once __DIR__ . '/bootstrap.php';
 // Build small showcases for latest items and services
 $latest_items = [];
 $latest_services = [];
@@ -57,7 +57,7 @@ try {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>ShareHub — A Community Resources Sharing Platform</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
     <style>
         /* Homepage specific styles */
         .home-hero { display:flex; align-items:center; gap:28px; padding:56px 18px; background:linear-gradient(120deg,#2563eb 0%, #06b6d4 100%); color:white; border-radius:12px; box-shadow:0 8px 40px rgba(37,99,235,0.12); }
@@ -88,7 +88,7 @@ try {
     </style>
 </head>
 <body>
-    <?php include_once 'header.php'; ?>
+    <?php render_header(); ?>
 
     <section class="home-hero wrapper">
         <div class="hero-left">
@@ -111,7 +111,7 @@ try {
             </div>
         </div>
         <div class="hero-right">
-            <img src="logo.svg" alt="ShareHub" style="width:160px;height:160px;filter:drop-shadow(0 8px 20px rgba(0,0,0,0.12));border-radius:16px;background:#fff;padding:12px;"/>
+            <img src="assets/brand/logo-badge.svg" alt="ShareHub" style="width:160px;height:160px;filter:drop-shadow(0 8px 20px rgba(0,0,0,0.12));border-radius:16px;background:#fff;padding:12px;"/>
         </div>
     </section>
 

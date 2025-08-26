@@ -1,13 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
-
-// Allow any authenticated user to view their own requests (seekers and givers)
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
-    header("location: login.php");
-    exit;
-}
-
-require_once "config.php";
+require_login();
 $requests = [];
 
 $sql = "SELECT r.request_id, r.request_type, r.item_id, r.service_id, r.message, r.status, r.request_date, ";
@@ -38,11 +31,11 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <title>My Requests</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-    <?php include_once 'header.php'; ?>
+    <?php render_header(); ?>
     <div class="wrapper">
         <h2>📋 My Requests</h2>
         <p>View the status of your requests for items and services.</p>
@@ -54,7 +47,6 @@ $conn->close();
 
         <?php if (!empty($requests)): ?>
             <table class="request-table">
-                <thead>
                     <tr>
                         <th>Resource</th>
                         <th>Type</th>
@@ -92,8 +84,8 @@ $conn->close();
                 <h4>📭 No Requests Yet</h4>
                 <p>You haven't made any requests yet.</p>
                 <p>
-            <a href="view_items.php" class="btn btn-default">Browse Items</a>
-            <a href="view_services.php" class="btn btn-default">Browse Services</a>
+            <a href="<?php echo site_href('view_items.php'); ?>" class="btn btn-default">Browse Items</a>
+            <a href="<?php echo site_href('view_services.php'); ?>" class="btn btn-default">Browse Services</a>
                 </p>
             </div>
         <?php endif; ?>

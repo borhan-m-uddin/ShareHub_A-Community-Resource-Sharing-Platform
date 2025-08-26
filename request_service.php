@@ -1,14 +1,7 @@
 <?php
-// Initialize the session
-session_start();
-
-// Check if the user is logged in and is a Seeker, otherwise redirect to login page
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== "seeker"){
-    header("location: login.php");
-    exit;
-}
-
-require_once "config.php";
+require_once __DIR__ . '/bootstrap.php';
+require_login();
+if (($_SESSION['role'] ?? '') !== 'seeker') { header('Location: ' . site_href('login.php')); exit; }
 
 $service_id = $_GET["service_id"] ?? null;
 $service = null;
@@ -66,17 +59,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-$conn->close();
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Request Service: <?php echo htmlspecialchars($service["title"]); ?></title>
-    <link rel="stylesheet" href="style.css">
+    <title>Request Service: <?php echo htmlspecialchars($service["title"] ?? ''); ?></title>
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
+    <?php render_header(); ?>
     <div class="wrapper">
         <h2>Request Service: <?php echo htmlspecialchars($service["title"]); ?></h2>
         <p><strong>Description:</strong> <?php echo nl2br(htmlspecialchars($service["description"])); ?></p>
@@ -94,10 +86,11 @@ $conn->close();
             </div>
             <div class="form-group">
                 <input type="submit" class="btn btn-primary" value="Submit Request">
-                <a href="view_services.php" class="btn btn-default">Cancel</a>
+                <a href="<?php echo site_href('view_services.php'); ?>" class="btn btn-default">Cancel</a>
             </div>
         </form>
     </div>
+    </main>
 </body>
 </html>
 
