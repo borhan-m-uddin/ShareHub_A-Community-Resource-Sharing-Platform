@@ -8,33 +8,43 @@ $reviews_received = [];
 
 // Handle submitting a new review
 if($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit_review"])){
-    $reviewed_user_id = $_POST["reviewed_user_id"];
-    $request_id = $_POST["request_id"];
-    $rating = $_POST["rating"];
-    $comment = $_POST["comment"];
-    
-    // Check if user has already reviewed this request
-    $check_sql = "SELECT review_id FROM reviews WHERE reviewer_id = ? AND request_id = ?";
-    if($check_stmt = $conn->prepare($check_sql)){
-        $check_stmt->bind_param("ii", $user_id, $request_id);
-        $check_stmt->execute();
-        $check_result = $check_stmt->get_result();
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        $error_message = "Invalid request. Please try again.";
+    } else {
+        $reviewed_user_id = (int)($_POST["reviewed_user_id"] ?? 0);
+        $request_id = (int)($_POST["request_id"] ?? 0);
+        $rating = (int)($_POST["rating"] ?? 0);
+        $comment = trim((string)($_POST["comment"] ?? ''));
+        if ($rating < 1 || $rating > 5) { $rating = 5; }
+        if (strlen($comment) > 2000) { $comment = substr($comment, 0, 2000); }
         
-        if($check_result->num_rows == 0){
-            $sql = "INSERT INTO reviews (reviewer_id, reviewed_user_id, request_id, rating, comment) VALUES (?, ?, ?, ?, ?)";
-            if($stmt = $conn->prepare($sql)){
-                $stmt->bind_param("iiiis", $user_id, $reviewed_user_id, $request_id, $rating, $comment);
-                if($stmt->execute()){
-                    $success_message = "Review submitted successfully!";
+        if ($reviewed_user_id > 0 && $request_id > 0 && $comment !== '') {
+            // Check if user has already reviewed this request
+            $check_sql = "SELECT review_id FROM reviews WHERE reviewer_id = ? AND request_id = ?";
+            if($check_stmt = $conn->prepare($check_sql)){
+                $check_stmt->bind_param("ii", $user_id, $request_id);
+                $check_stmt->execute();
+                $check_result = $check_stmt->get_result();
+                
+                if($check_result->num_rows == 0){
+                    $sql = "INSERT INTO reviews (reviewer_id, reviewed_user_id, request_id, rating, comment) VALUES (?, ?, ?, ?, ?)";
+                    if($stmt = $conn->prepare($sql)){
+                        $stmt->bind_param("iiiis", $user_id, $reviewed_user_id, $request_id, $rating, $comment);
+                        if($stmt->execute()){
+                            $success_message = "Review submitted successfully!";
+                        } else {
+                            $error_message = "Error submitting review.";
+                        }
+                        $stmt->close();
+                    }
                 } else {
-                    $error_message = "Error submitting review.";
+                    $error_message = "You have already reviewed this request.";
                 }
-                $stmt->close();
+                $check_stmt->close();
             }
         } else {
-            $error_message = "You have already reviewed this request.";
+            $error_message = "Please complete all required fields.";
         }
-        $check_stmt->close();
     }
 }
 
@@ -185,6 +195,7 @@ if(!empty($reviews_received)){
                 <h3>📝 Submit a Review</h3>
                 <p class="muted">You have completed transactions that can be reviewed:</p>
                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+                    <?php echo csrf_field(); ?>
                     <div class="form-group">
                         <label for="request_id">Select Completed Request:</label>
                         <select name="request_id" id="request_id" class="form-control" required onchange="updateReviewForm()">
@@ -205,19 +216,20 @@ if(!empty($reviews_received)){
                     <input type="hidden" name="reviewed_user_id" id="reviewed_user_id">
 
                     <div class="form-group">
-                        <label>Rating:</label>
-                        <div class="rating-input" style="display:flex; gap:6px;">
+                        <label for="star5">Rating:</label>
+                        <div class="rating-stars" role="radiogroup" aria-label="Rating">
                             <input type="radio" name="rating" value="5" id="star5" required>
-                            <label for="star5">★</label>
+                            <label for="star5" title="5 stars" aria-label="5 stars">★</label>
                             <input type="radio" name="rating" value="4" id="star4">
-                            <label for="star4">★</label>
+                            <label for="star4" title="4 stars" aria-label="4 stars">★</label>
                             <input type="radio" name="rating" value="3" id="star3">
-                            <label for="star3">★</label>
+                            <label for="star3" title="3 stars" aria-label="3 stars">★</label>
                             <input type="radio" name="rating" value="2" id="star2">
-                            <label for="star2">★</label>
+                            <label for="star2" title="2 stars" aria-label="2 stars">★</label>
                             <input type="radio" name="rating" value="1" id="star1">
-                            <label for="star1">★</label>
+                            <label for="star1" title="1 star" aria-label="1 star">★</label>
                         </div>
+                        <span class="sr-only" id="rating-help">Use left and right arrow keys to change rating.</span>
                     </div>
 
                     <div class="form-group">
@@ -313,12 +325,13 @@ if(!empty($reviews_received)){
             }
         }
 
-        // Star rating interaction
-        const stars = document.querySelectorAll('.rating-input label');
-        stars.forEach((star, index) => {
-            star.addEventListener('click', () => {
-                const rating = 5 - index;
-                document.querySelector(`input[value="${rating}"]`).checked = true;
+        // Optional: ensure clicking label checks the corresponding radio (native behavior already covers this)
+        // Keep for safety with dynamic DOM environments
+        document.querySelectorAll('.rating-stars label').forEach(label => {
+            label.addEventListener('click', (e) => {
+                const forId = label.getAttribute('for');
+                const input = document.getElementById(forId);
+                if (input) input.checked = true;
             });
         });
     </script>

@@ -12,43 +12,50 @@ $error = "";
 
 // Handle service request submission
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'request_service') {
-    $service_id = intval($_POST['service_id']);
-    $message_text = trim($_POST['message']);
-    
-    // Get service details and giver ID
-    $stmt = $conn->prepare("SELECT giver_id, title FROM services WHERE service_id = ? AND availability = 'available'");
-    $stmt->bind_param("i", $service_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows == 1) {
-        $service_data = $result->fetch_assoc();
-        $giver_id = $service_data['giver_id'];
-        
-        // Check if user already has a pending request for this service
-        $check_stmt = $conn->prepare("SELECT request_id FROM requests WHERE requester_id = ? AND service_id = ? AND status = 'pending'");
-        $check_stmt->bind_param("ii", $_SESSION['user_id'], $service_id);
-        $check_stmt->execute();
-        $check_result = $check_stmt->get_result();
-        
-        if ($check_result->num_rows == 0) {
-            // Create new request
-            $insert_stmt = $conn->prepare("INSERT INTO requests (requester_id, giver_id, service_id, request_type, message, request_date) VALUES (?, ?, ?, 'service', ?, NOW())");
-            $insert_stmt->bind_param("iiis", $_SESSION['user_id'], $giver_id, $service_id, $message_text);
-            if ($insert_stmt->execute()) {
-                $message = "Service request sent successfully!";
-            } else {
-                $error = "Error sending request: " . $conn->error;
-            }
-            $insert_stmt->close();
-        } else {
-            $error = "You already have a pending request for this service!";
-        }
-        $check_stmt->close();
+    // CSRF check
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        $error = "Invalid request. Please try again.";
     } else {
-        $error = "Service not available!";
+        $service_id = max(0, intval($_POST['service_id'] ?? 0));
+        $message_text = trim((string)($_POST['message'] ?? ''));
+        if (strlen($message_text) > 1000) { $message_text = substr($message_text, 0, 1000); }
+        
+        // Get service details and giver ID
+        $stmt = $conn->prepare("SELECT giver_id, title FROM services WHERE service_id = ? AND availability = 'available'");
+        $stmt->bind_param("i", $service_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows == 1) {
+            $service_data = $result->fetch_assoc();
+            $giver_id = (int)$service_data['giver_id'];
+            
+            // Check if user already has a pending request for this service
+            $check_stmt = $conn->prepare("SELECT request_id FROM requests WHERE requester_id = ? AND service_id = ? AND status = 'pending'");
+            $uid = (int)($_SESSION['user_id'] ?? 0);
+            $check_stmt->bind_param("ii", $uid, $service_id);
+            $check_stmt->execute();
+            $check_result = $check_stmt->get_result();
+            
+            if ($check_result->num_rows == 0) {
+                // Create new request
+                $insert_stmt = $conn->prepare("INSERT INTO requests (requester_id, giver_id, service_id, request_type, message, request_date) VALUES (?, ?, ?, 'service', ?, NOW())");
+                $insert_stmt->bind_param("iiis", $uid, $giver_id, $service_id, $message_text);
+                if ($insert_stmt->execute()) {
+                    $message = "Service request sent successfully!";
+                } else {
+                    $error = "Error sending request.";
+                }
+                $insert_stmt->close();
+            } else {
+                $error = "You already have a pending request for this service!";
+            }
+            $check_stmt->close();
+        } else {
+            $error = "Service not available!";
+        }
+        $stmt->close();
     }
-    $stmt->close();
 }
 
 // Get search and filter parameters
@@ -188,6 +195,7 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM services WHERE av
             </div>
             <div class="modal-body">
                 <form method="POST">
+                    <?php echo csrf_field(); ?>
                     <input type="hidden" name="action" value="request_service">
                     <input type="hidden" name="service_id" id="request_service_id">
                     <div class="form-group">

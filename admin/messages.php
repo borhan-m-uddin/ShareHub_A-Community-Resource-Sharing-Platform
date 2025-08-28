@@ -80,12 +80,7 @@ if($st=$conn->prepare($sqlc)){
                 <?php endforeach; ?>
                 </tbody>
             </table>
-            <?php if ($total > $perPage): ?>
-            <div style="margin-top:10px;display:flex;gap:8px;">
-                <?php if ($page>1): ?><a class="btn btn-default" href="?<?php echo http_build_query(array_merge($_GET,['page'=>$page-1])); ?>">Prev</a><?php endif; ?>
-                <?php if ($offset + count($messages) < $total): ?><a class="btn btn-default" href="?<?php echo http_build_query(array_merge($_GET,['page'=>$page+1])); ?>">Next</a><?php endif; ?>
-            </div>
-            <?php endif; ?>
+            <?php render_pagination($page, $perPage, count($messages), $total); ?>
         <?php else: ?>
             <div class="empty-state"><h3>No messages found</h3></div>
         <?php endif; ?>

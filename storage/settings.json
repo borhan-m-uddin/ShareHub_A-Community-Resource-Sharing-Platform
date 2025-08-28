@@ -1,11 +1,12 @@
 {
   "site_name": "ShareHub",
   "default_theme": "light",
-  "smtp_host": "",
+  "contact_email": "borhanudiin1902@gmail.com",
+  "smtp_host": "smtp.gmail.com",
   "smtp_port": 587,
-  "smtp_user": "",
-  "smtp_pass": "",
-  "smtp_from": "",
-  "smtp_from_name": "",
-  "smtp_secure": ""
+  "smtp_user": "borhanudiin1902@gmail.com",
+  "smtp_pass": "yqulvfdblivtzwdi",
+  "smtp_from": "borhanudiin1902@gmail.com",
+  "smtp_from_name": "ShareHub",
+  "smtp_secure": "tls"
 }

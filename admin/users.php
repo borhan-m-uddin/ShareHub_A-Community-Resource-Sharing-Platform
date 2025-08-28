@@ -157,7 +157,7 @@ $total=0; $sqlc="SELECT COUNT(*) c FROM users $where"; if($st=$conn->prepare($sq
         <input class="form-control" type="text" name="q" value="<?php echo htmlspecialchars($q); ?>" placeholder="Search by username/email/ID" />
         <select class="form-control" name="role">
             <option value="">All roles</option>
-            <?php foreach(['admin','giver','seeker'] as $r){ $sel=$role===$r?'selected':''; echo "<option value=\"$r\" $sel>".ucfirst($r)."</option>"; } ?>
+            <?php foreach(ROLES as $r){ $sel=$role===$r?'selected':''; echo "<option value=\"$r\" $sel>".ucfirst($r)."</option>"; } ?>
         </select>
         <select class="form-control" name="status">
             <option value="">All statuses</option>
@@ -227,12 +227,7 @@ $total=0; $sqlc="SELECT COUNT(*) c FROM users $where"; if($st=$conn->prepare($sq
             <?php endforeach; ?>
             </tbody>
         </table>
-        <?php if ($total > $perPage): ?>
-        <div style="margin-top:10px;display:flex;gap:8px;">
-            <?php if ($page>1): ?><a class="btn btn-default" href="?<?php echo http_build_query(array_merge($_GET,['page'=>$page-1])); ?>">Prev</a><?php endif; ?>
-            <?php if ($offset + count($users) < $total): ?><a class="btn btn-default" href="?<?php echo http_build_query(array_merge($_GET,['page'=>$page+1])); ?>">Next</a><?php endif; ?>
-        </div>
-        <?php endif; ?>
+    <?php render_pagination($page, $perPage, count($users), $total); ?>
     <?php else: ?>
         <div class="empty-state"><h3>No users found</h3></div>
     <?php endif; ?>

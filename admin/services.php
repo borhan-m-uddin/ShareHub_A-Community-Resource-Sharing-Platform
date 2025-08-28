@@ -101,7 +101,7 @@ foreach($all_services as $service) {
             <input class="form-control" type="text" name="q" value="<?php echo htmlspecialchars($q); ?>" placeholder="Search title/desc/username or ID" />
             <select class="form-control" name="availability">
                 <option value="">All Statuses</option>
-                <?php foreach(['available','busy','unavailable'] as $s): ?><option value="<?php echo $s; ?>" <?php echo $availability===$s?'selected':''; ?>><?php echo ucfirst($s); ?></option><?php endforeach; ?>
+                <?php foreach(SERVICE_AVAILABILITIES as $s): ?><option value="<?php echo $s; ?>" <?php echo $availability===$s?'selected':''; ?>><?php echo ucfirst($s); ?></option><?php endforeach; ?>
             </select>
             <input class="form-control" type="text" name="category" value="<?php echo htmlspecialchars($category); ?>" placeholder="Category" />
             <input class="form-control" type="date" name="from" value="<?php echo htmlspecialchars($from); ?>" />
@@ -199,12 +199,7 @@ foreach($all_services as $service) {
                     </div>
                 </div>
             <?php endif; ?>
-        <?php if ($total > $perPage): ?>
-        <div style="margin-top:10px;display:flex;gap:8px;">
-            <?php if ($page>1): ?><a class="btn btn-default" href="?<?php echo http_build_query(array_merge($_GET,['page'=>$page-1])); ?>">Prev</a><?php endif; ?>
-            <?php if ($offset + count($all_services) < $total): ?><a class="btn btn-default" href="?<?php echo http_build_query(array_merge($_GET,['page'=>$page+1])); ?>">Next</a><?php endif; ?>
-        </div>
-        <?php endif; ?>
+    <?php render_pagination($page, $perPage, count($all_services), $total); ?>
         <?php else: ?>
             <div class="empty-state">
                 <h3>No services found</h3>

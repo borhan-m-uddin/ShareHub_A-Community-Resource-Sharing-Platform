@@ -36,8 +36,13 @@ if($stmt = $conn->prepare($sql)){
 
 // Handle request status update
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["request_id"], $_POST["action"])) {
-    $request_id = (int)$_POST['request_id'];
-    $action = $_POST['action'] === 'approve' ? 'approve' : 'decline';
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        // simple redirect to avoid repost
+        header("location: manage_requests.php");
+        exit;
+    }
+    $request_id = (int)($_POST['request_id'] ?? 0);
+    $action = ($_POST['action'] ?? '') === 'approve' ? 'approve' : 'decline';
     $new_status = $action === 'approve' ? 'approved' : 'rejected'; // enum uses 'rejected'
 
     // Update only if the request belongs to this giver (ownership check via JOIN)
@@ -123,11 +128,13 @@ $conn->close();
                             <td class="action-buttons">
                                 <?php if (($request["status"] ?: 'pending') == "pending"): ?>
                                     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+                                        <?php echo csrf_field(); ?>
                                         <input type="hidden" name="request_id" value="<?php echo $request["request_id"]; ?>">
                                         <input type="hidden" name="action" value="approve">
                                         <input type="submit" class="btn btn-primary" value="✅ Approve">
                                     </form>
                                     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+                                        <?php echo csrf_field(); ?>
                                         <input type="hidden" name="request_id" value="<?php echo $request["request_id"]; ?>">
                                         <input type="hidden" name="action" value="decline">
                                         <input type="submit" class="btn btn-danger" value="❌ Decline">

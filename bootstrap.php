@@ -105,8 +105,10 @@ if (!function_exists('csrf_field')) {
 if (!function_exists('csrf_verify')) {
     function csrf_verify(?string $token): bool {
         $ok = is_string($token) && isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
-        // Rotate token whether ok or not to reduce replay
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        // Rotate token only on success to prevent cascading failures in multi-check flows
+        if ($ok) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
         return $ok;
     }
 }
@@ -115,13 +117,14 @@ if (!function_exists('csrf_verify')) {
 if (!function_exists('send_email')) {
     function send_email(string $to, string $subject, string $message, ?string $from = null): bool {
     // Pull SMTP config from constants, with settings.json fallback
-    $smtpHost = defined('SMTP_HOST') ? SMTP_HOST : (string)get_setting('smtp_host', '');
-    $smtpUser = defined('SMTP_USER') ? SMTP_USER : (string)get_setting('smtp_user', '');
-    $smtpPass = defined('SMTP_PASS') ? SMTP_PASS : (string)get_setting('smtp_pass', '');
-    $smtpPort = defined('SMTP_PORT') ? SMTP_PORT : (int)get_setting('smtp_port', 587);
-    $smtpFrom = defined('SMTP_FROM') ? SMTP_FROM : (string)get_setting('smtp_from', '');
-    $smtpFromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : (string)get_setting('smtp_from_name', '');
-    $smtpSecure = defined('SMTP_SECURE') ? SMTP_SECURE : (string)get_setting('smtp_secure', '');
+    // Prefer settings.json unless a non-empty constant is explicitly provided
+    $smtpHost = defined('SMTP_HOST') && constant('SMTP_HOST') !== '' ? (string)constant('SMTP_HOST') : (string)get_setting('smtp_host', '');
+    $smtpUser = defined('SMTP_USER') && constant('SMTP_USER') !== '' ? (string)constant('SMTP_USER') : (string)get_setting('smtp_user', '');
+    $smtpPass = defined('SMTP_PASS') && constant('SMTP_PASS') !== '' ? (string)constant('SMTP_PASS') : (string)get_setting('smtp_pass', '');
+    $smtpPort = defined('SMTP_PORT') && (string)constant('SMTP_PORT') !== '' ? (int)constant('SMTP_PORT') : (int)get_setting('smtp_port', 587);
+    $smtpFrom = defined('SMTP_FROM') && constant('SMTP_FROM') !== '' ? (string)constant('SMTP_FROM') : (string)get_setting('smtp_from', '');
+    $smtpFromName = defined('SMTP_FROM_NAME') && constant('SMTP_FROM_NAME') !== '' ? (string)constant('SMTP_FROM_NAME') : (string)get_setting('smtp_from_name', '');
+    $smtpSecure = defined('SMTP_SECURE') && constant('SMTP_SECURE') !== '' ? (string)constant('SMTP_SECURE') : (string)get_setting('smtp_secure', '');
 
     // Prefer configured FROM
     if ($from === null && $smtpFrom) { $from = $smtpFrom; }
@@ -172,6 +175,95 @@ if (!function_exists('send_email')) {
                 $entry = "[" . date('Y-m-d H:i:s') . "] PHPMailer error: " . $e->getMessage() . "\n";
                 @file_put_contents($logFile, $entry, FILE_APPEND);
                 $sent = false;
+            }
+
+            // If PHPMailer not available or failed, try a minimal direct SMTP client (STARTTLS/SSL)
+            if (!$sent) {
+                $smtpOk = false;
+                $host = $smtpHost;
+                $port = (int)$smtpPort;
+                $secure = strtolower((string)$smtpSecure);
+                $context = stream_context_create([
+                    'ssl' => [
+                        'verify_peer' => true,
+                        'verify_peer_name' => true,
+                        'allow_self_signed' => false,
+                        'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT,
+                    ],
+                ]);
+                $transport = ($secure === 'ssl') ? 'ssl' : 'tcp';
+                $remote = sprintf('%s://%s:%d', $transport, $host, $port);
+
+                $fp = @stream_socket_client($remote, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $context);
+                if ($fp) {
+                    stream_set_timeout($fp, 15);
+                    $read = function() use ($fp) { return fgets($fp, 515) ?: ''; };
+                    $write = function($data) use ($fp) { return fwrite($fp, $data); };
+                    $expect = function($prefix) use ($read) {
+                        $line = '';
+                        do { $line = $read(); } while ($line !== '' && isset($line[3]) && $line[3] === '-');
+                        return strpos($line, $prefix) === 0;
+                    };
+
+                    if ($expect('220')) {
+                        $ehlo = 'EHLO sharehub.local\r\n';
+                        $write($ehlo);
+                        $expect('250');
+
+                        if ($secure === 'tls') {
+                            $write("STARTTLS\r\n");
+                            if ($expect('220')) {
+                                if (@stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT)) {
+                                    $write($ehlo);
+                                    $expect('250');
+                                }
+                            }
+                        }
+
+                        $write("AUTH LOGIN\r\n");
+                        if ($expect('334')) {
+                            $write(base64_encode($smtpUser) . "\r\n");
+                            if ($expect('334')) {
+                                $write(base64_encode(str_replace(' ', '', $smtpPass)) . "\r\n");
+                                if ($expect('235')) {
+                                    $fromAddr = $from ?: $smtpFrom;
+                                    $write('MAIL FROM: <' . $fromAddr . ">\r\n");
+                                    $expect('250');
+                                    $write('RCPT TO: <' . $to . ">\r\n");
+                                    $expect('250');
+                                    $write("DATA\r\n");
+                                    if ($expect('354')) {
+                                        $fromHeaderName = $smtpFromName ? '"' . preg_replace('/[\r\n\"]+/', '', $smtpFromName) . '" ' : '';
+                                        $headers = '';
+                                        $headers .= 'From: ' . $fromHeaderName . '<' . $fromAddr . ">\r\n";
+                                        $headers .= 'To: <' . $to . ">\r\n";
+                                        $headers .= 'Subject: ' . $subject . "\r\n";
+                                        $headers .= "MIME-Version: 1.0\r\n";
+                                        $headers .= "Content-Type: text/plain; charset=UTF-8\r\n\r\n";
+                                        $body = $headers . $message . "\r\n.\r\n";
+                                        $write($body);
+                                        if ($expect('250')) {
+                                            $smtpOk = true;
+                                        }
+                                    }
+                                    $write("QUIT\r\n");
+                                }
+                            }
+                        }
+                    }
+                    @fclose($fp);
+                }
+
+                if ($smtpOk) {
+                    $sent = true;
+                } else {
+                    // Log direct SMTP failure
+                    $dir = __DIR__ . DIRECTORY_SEPARATOR . 'storage';
+                    if (!is_dir($dir)) { @mkdir($dir, 0777, true); }
+                    $logFile = $dir . DIRECTORY_SEPARATOR . 'mail.log';
+                    $entry = "[" . date('Y-m-d H:i:s') . "] SMTP send failed to {$to} via {$smtpHost}:{$smtpPort} ({$smtpSecure})\n";
+                    @file_put_contents($logFile, $entry, FILE_APPEND);
+                }
             }
         }
 
@@ -264,12 +356,66 @@ if (!function_exists('require_login')) {
 }
 
 if (!function_exists('require_admin')) {
+// -------- Shared simple config constants (for reuse in selects/UI) ---------
+if (!defined('ROLES')) {
+    define('ROLES', ['admin','giver','seeker']);
+}
+if (!defined('ITEM_STATUSES')) {
+    define('ITEM_STATUSES', ['available','pending','unavailable']);
+}
+if (!defined('SERVICE_AVAILABILITIES')) {
+    define('SERVICE_AVAILABILITIES', ['available','busy','unavailable']);
+}
+if (!defined('REQUEST_STATUSES')) {
+    define('REQUEST_STATUSES', ['pending','approved','rejected','completed']);
+}
+
     function require_admin(): void {
         require_login();
         if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
             header('Location: ' . site_href('index.php'));
             exit;
         }
+    }
+}
+
+// -------- Small reusable UI helpers (non-breaking) ---------
+if (!function_exists('build_query')) {
+    /**
+     * Build a query string by merging current $_GET params with updates.
+     * Pass a $base array to override the base params; by default uses $_GET.
+     */
+    function build_query(array $updates = [], ?array $base = null): string {
+        $params = $base ?? (isset($_GET) && is_array($_GET) ? $_GET : []);
+        foreach ($updates as $k => $v) {
+            if ($v === null) { unset($params[$k]); } else { $params[$k] = $v; }
+        }
+        return http_build_query($params);
+    }
+}
+
+if (!function_exists('render_pagination')) {
+    /**
+     * Render Prev/Next pagination controls identical to existing markup/logic.
+     * - $page: current page (1-based)
+     * - $perPage: items per page
+     * - $shownCount: number of items on the current page
+     * - $total: total items across all pages
+     * - $extraParams: optional overrides to include in query (merged with $_GET)
+     */
+    function render_pagination(int $page, int $perPage, int $shownCount, int $total, array $extraParams = []): void {
+        if ($total <= $perPage) { return; }
+        $offset = ($page - 1) * $perPage;
+        echo '<div style="margin-top:10px;display:flex;gap:8px;">';
+        if ($page > 1) {
+            $qs = build_query(array_merge($extraParams, ['page' => $page - 1]));
+            echo '<a class="btn btn-default" href="?' . htmlspecialchars($qs, ENT_QUOTES, 'UTF-8') . '">Prev</a>';
+        }
+        if ($offset + $shownCount < $total) {
+            $qs = build_query(array_merge($extraParams, ['page' => $page + 1]));
+            echo '<a class="btn btn-default" href="?' . htmlspecialchars($qs, ENT_QUOTES, 'UTF-8') . '">Next</a>';
+        }
+        echo '</div>';
     }
 }
 

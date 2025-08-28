@@ -12,43 +12,53 @@ $error = "";
 
 // Handle request submission
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'request_item') {
-    $item_id = intval($_POST['item_id']);
-    $message_text = trim($_POST['message']);
-    
-    // Get item details and giver ID
-    $stmt = $conn->prepare("SELECT giver_id, title FROM items WHERE item_id = ? AND availability_status = 'available'");
-    $stmt->bind_param("i", $item_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows == 1) {
-        $item_data = $result->fetch_assoc();
-        $giver_id = $item_data['giver_id'];
-        
-        // Check if user already has a pending request for this item
-        $check_stmt = $conn->prepare("SELECT request_id FROM requests WHERE requester_id = ? AND item_id = ? AND status = 'pending'");
-        $check_stmt->bind_param("ii", $_SESSION['user_id'], $item_id);
-        $check_stmt->execute();
-        $check_result = $check_stmt->get_result();
-        
-        if ($check_result->num_rows == 0) {
-            // Create new request
-            $insert_stmt = $conn->prepare("INSERT INTO requests (requester_id, giver_id, item_id, request_type, message, request_date) VALUES (?, ?, ?, 'item', ?, NOW())");
-            $insert_stmt->bind_param("iiis", $_SESSION['user_id'], $giver_id, $item_id, $message_text);
-            if ($insert_stmt->execute()) {
-                $message = "Request sent successfully!";
-            } else {
-                $error = "Error sending request: " . $conn->error;
-            }
-            $insert_stmt->close();
-        } else {
-            $error = "You already have a pending request for this item!";
-        }
-        $check_stmt->close();
+    // CSRF check
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        $error = "Invalid request. Please try again.";
     } else {
-        $error = "Item not available!";
+        $item_id = max(0, intval($_POST['item_id'] ?? 0));
+        $message_text = trim((string)($_POST['message'] ?? ''));
+        // Soft-limit message length without making it required to avoid breaking flow
+        if (strlen($message_text) > 1000) {
+            $message_text = substr($message_text, 0, 1000);
+        }
+    
+        // Get item details and giver ID
+        $stmt = $conn->prepare("SELECT giver_id, title FROM items WHERE item_id = ? AND availability_status = 'available'");
+        $stmt->bind_param("i", $item_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        if ($result->num_rows == 1) {
+            $item_data = $result->fetch_assoc();
+            $giver_id = (int)$item_data['giver_id'];
+        
+            // Check if user already has a pending request for this item
+            $check_stmt = $conn->prepare("SELECT request_id FROM requests WHERE requester_id = ? AND item_id = ? AND status = 'pending'");
+            $uid = (int)($_SESSION['user_id'] ?? 0);
+            $check_stmt->bind_param("ii", $uid, $item_id);
+            $check_stmt->execute();
+            $check_result = $check_stmt->get_result();
+        
+            if ($check_result->num_rows == 0) {
+                // Create new request
+                $insert_stmt = $conn->prepare("INSERT INTO requests (requester_id, giver_id, item_id, request_type, message, request_date) VALUES (?, ?, ?, 'item', ?, NOW())");
+                $insert_stmt->bind_param("iiis", $uid, $giver_id, $item_id, $message_text);
+                if ($insert_stmt->execute()) {
+                    $message = "Request sent successfully!";
+                } else {
+                    $error = "Error sending request."; // avoid leaking SQL errors
+                }
+                $insert_stmt->close();
+            } else {
+                $error = "You already have a pending request for this item!";
+            }
+            $check_stmt->close();
+        } else {
+            $error = "Item not available!";
+        }
+        $stmt->close();
     }
-    $stmt->close();
 }
 
 // Get search and filter parameters
@@ -212,6 +222,7 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
             </div>
             <div class="modal-body">
                 <form method="POST">
+                    <?php echo csrf_field(); ?>
                     <input type="hidden" name="action" value="request_item">
                     <input type="hidden" name="item_id" id="request_item_id">
                     <div class="form-group">

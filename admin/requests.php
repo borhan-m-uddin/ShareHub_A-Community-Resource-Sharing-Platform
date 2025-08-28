@@ -128,7 +128,7 @@ if ($stmtc = $conn->prepare($sqlCount)) {
         <input class="form-control" type="text" name="q" value="<?php echo htmlspecialchars($q); ?>" placeholder="Search by username or ID" />
         <select class="form-control" name="status">
             <option value="">All Statuses</option>
-            <?php foreach(['pending','approved','rejected','completed'] as $s): ?>
+            <?php foreach(REQUEST_STATUSES as $s): ?>
                 <option value="<?php echo $s; ?>" <?php echo $status===$s?'selected':''; ?>><?php echo ucfirst($s); ?></option>
             <?php endforeach; ?>
         </select>
@@ -195,16 +195,7 @@ if ($stmtc = $conn->prepare($sqlCount)) {
         <?php endforeach; ?>
         </tbody>
     </table>
-    <?php if ($total > $perPage): ?>
-        <div style="margin-top:10px;display:flex;gap:8px;">
-            <?php if ($page > 1): ?>
-                <a class="btn btn-default" href="?<?php echo http_build_query(array_merge($_GET, ['page'=>$page-1])); ?>">Prev</a>
-            <?php endif; ?>
-            <?php if ($offset + count($requests) < $total): ?>
-                <a class="btn btn-default" href="?<?php echo http_build_query(array_merge($_GET, ['page'=>$page+1])); ?>">Next</a>
-            <?php endif; ?>
-        </div>
-    <?php endif; ?>
+    <?php render_pagination($page, $perPage, count($requests), $total); ?>
     <?php else: ?>
         <div class="empty-state"><h3>No requests found</h3></div>
     <?php endif; ?>

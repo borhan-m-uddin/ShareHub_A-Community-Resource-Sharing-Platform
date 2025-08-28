@@ -7,31 +7,51 @@ $user_id = $_SESSION["user_id"];
 
 // Handle sending a new message
 if($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["send_message"])){
-    $receiver_id = $_POST["receiver_id"];
-    $subject = $_POST["subject"];
-    $message_content = $_POST["message_content"];
-    $request_id = !empty($_POST["request_id"]) ? $_POST["request_id"] : null;
-    
-    $sql = "INSERT INTO messages (sender_id, receiver_id, request_id, subject, message_content) VALUES (?, ?, ?, ?, ?)";
-    if($stmt = $conn->prepare($sql)){
-        $stmt->bind_param("iiiss", $user_id, $receiver_id, $request_id, $subject, $message_content);
-        if($stmt->execute()){
-            $success_message = "Message sent successfully!";
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        $error_message = "Invalid request. Please try again.";
+    } else {
+        $receiver_id = (int)($_POST["receiver_id"] ?? 0);
+        $subject = trim((string)($_POST["subject"] ?? ''));
+        $message_content = trim((string)($_POST["message_content"] ?? ''));
+        $request_id = isset($_POST["request_id"]) && $_POST["request_id"] !== '' ? (int)$_POST["request_id"] : null;
+        // Soft input limits
+        if (strlen($subject) > 200) { $subject = substr($subject, 0, 200); }
+        if (strlen($message_content) > 4000) { $message_content = substr($message_content, 0, 4000); }
+        if ($receiver_id > 0 && $subject !== '' && $message_content !== '') {
+            $sql = "INSERT INTO messages (sender_id, receiver_id, request_id, subject, message_content) VALUES (?, ?, ?, ?, ?)";
+            if($stmt = $conn->prepare($sql)){
+                // Allow NULL for request_id when not provided
+                if ($request_id === null) {
+                    $null = null;
+                    $stmt->bind_param("iiiss", $user_id, $receiver_id, $null, $subject, $message_content);
+                } else {
+                    $stmt->bind_param("iiiss", $user_id, $receiver_id, $request_id, $subject, $message_content);
+                }
+                if($stmt->execute()){
+                    $success_message = "Message sent successfully!";
+                } else {
+                    $error_message = "Error sending message.";
+                }
+                $stmt->close();
+            }
         } else {
-            $error_message = "Error sending message.";
+            $error_message = "Please fill in all required fields.";
         }
-        $stmt->close();
     }
 }
 
 // Mark messages as read
 if($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["mark_read"])){
-    $message_id = $_POST["message_id"];
-    $sql = "UPDATE messages SET is_read = 1 WHERE message_id = ? AND receiver_id = ?";
-    if($stmt = $conn->prepare($sql)){
-        $stmt->bind_param("ii", $message_id, $user_id);
-        $stmt->execute();
-        $stmt->close();
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        // ignore invalid CSRF silently
+    } else {
+        $message_id = (int)($_POST["message_id"] ?? 0);
+        $sql = "UPDATE messages SET is_read = 1 WHERE message_id = ? AND receiver_id = ?";
+        if($stmt = $conn->prepare($sql)){
+            $stmt->bind_param("ii", $message_id, $user_id);
+            $stmt->execute();
+            $stmt->close();
+        }
     }
 }
 
@@ -110,6 +130,7 @@ if($stmt = $conn->prepare($sql)){
                 <div class="card-body">
                 <h3>✍️ Compose Message</h3>
                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+                    <?php echo csrf_field(); ?>
                     <div class="form-group">
                         <label for="receiver_id">To:</label>
                         <select name="receiver_id" id="receiver_id" class="form-control" required>
@@ -198,6 +219,7 @@ if($stmt = $conn->prepare($sql)){
                                 
                                 <?php if($message['message_type'] == 'received' && $message['is_read'] == 0): ?>
                                     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" style="margin-top: 10px;">
+                                        <?php echo csrf_field(); ?>
                                         <input type="hidden" name="message_id" value="<?php echo $message['message_id']; ?>">
                                         <input type="submit" name="mark_read" value="Mark as Read" class="btn btn-success btn-sm">
                                     </form>

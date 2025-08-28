@@ -14,6 +14,9 @@ $error = "";
 
 // Handle service actions
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        $error = "Invalid request. Please try again.";
+    } else {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add_service':
@@ -23,12 +26,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $location = trim($_POST['location']);
                 
                 if (!empty($title) && !empty($description) && !empty($location)) {
+                    if (strlen($title) > 200) { $title = substr($title, 0, 200); }
+                    if (strlen($description) > 2000) { $description = substr($description, 0, 2000); }
+                    if (strlen($location) > 255) { $location = substr($location, 0, 255); }
                     $stmt = $conn->prepare("INSERT INTO services (giver_id, title, description, category, location, posting_date) VALUES (?, ?, ?, ?, ?, NOW())");
                     $stmt->bind_param("issss", $_SESSION['user_id'], $title, $description, $category, $location);
                     if ($stmt->execute()) {
                         $message = "Service added successfully!";
                     } else {
-                        $error = "Error adding service: " . $conn->error;
+                        $error = "Error adding service.";
                     }
                     $stmt->close();
                 } else {
@@ -44,12 +50,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $availability = $_POST['availability'];
                 $location = trim($_POST['location']);
                 
+                if (strlen($title) > 200) { $title = substr($title, 0, 200); }
+                if (strlen($description) > 2000) { $description = substr($description, 0, 2000); }
+                if (strlen($location) > 255) { $location = substr($location, 0, 255); }
                 $stmt = $conn->prepare("UPDATE services SET title = ?, description = ?, category = ?, availability = ?, location = ? WHERE service_id = ? AND giver_id = ?");
                 $stmt->bind_param("sssssii", $title, $description, $category, $availability, $location, $service_id, $_SESSION['user_id']);
                 if ($stmt->execute()) {
                     $message = "Service updated successfully!";
                 } else {
-                    $error = "Error updating service: " . $conn->error;
+                    $error = "Error updating service.";
                 }
                 $stmt->close();
                 break;
@@ -61,11 +70,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if ($stmt->execute()) {
                     $message = "Service deleted successfully!";
                 } else {
-                    $error = "Error deleting service: " . $conn->error;
+                    $error = "Error deleting service.";
                 }
                 $stmt->close();
                 break;
         }
+    }
     }
 }
 
@@ -100,6 +110,7 @@ $services_result = $stmt->get_result();
         <div class="card" style="margin-bottom:18px;">
             <div class="card-header">➕ Offer New Service</div>
             <form method="POST" class="card-body">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="action" value="add_service">
                 <div class="grid grid-2">
                     <div class="form-group">
@@ -184,6 +195,7 @@ $services_result = $stmt->get_result();
                 ✏️ Edit Service
             </div>
             <form method="POST" id="editForm" class="modal-body">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="action" value="update_service">
                 <input type="hidden" name="service_id" id="edit_service_id">
                 <div class="grid grid-2">
@@ -264,6 +276,7 @@ $services_result = $stmt->get_result();
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.innerHTML = `
+                    ${`<?php echo str_replace("`", "\\`", csrf_field()); ?>`}
                     <input type="hidden" name="action" value="delete_service">
                     <input type="hidden" name="service_id" value="${serviceId}">
                 `;

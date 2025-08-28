@@ -14,6 +14,10 @@ $error = "";
 
 // Handle item actions
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // CSRF check for all item mutations
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        $error = "Invalid request. Please try again.";
+    } else {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add_item':
@@ -80,12 +84,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
 
                 if (!empty($title) && !empty($description) && !empty($pickup_location) && empty($error)) {
+                    // Soft input limits
+                    if (strlen($title) > 200) { $title = substr($title, 0, 200); }
+                    if (strlen($description) > 2000) { $description = substr($description, 0, 2000); }
+                    if (strlen($pickup_location) > 255) { $pickup_location = substr($pickup_location, 0, 255); }
                     $stmt = $conn->prepare("INSERT INTO items (giver_id, title, description, category, condition_status, pickup_location, image_url, posting_date) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
                     $stmt->bind_param("issssss", $_SESSION['user_id'], $title, $description, $category, $condition_status, $pickup_location, $image_url);
                     if ($stmt->execute()) {
                         $message = "Item added successfully!";
                     } else {
-                        $error = "Error adding item: " . $conn->error;
+                        $error = "Error adding item.";
                     }
                     $stmt->close();
                 } else if (empty($error)) {
@@ -159,6 +167,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
                 
                 if (empty($error)) {
+                    if (strlen($title) > 200) { $title = substr($title, 0, 200); }
+                    if (strlen($description) > 2000) { $description = substr($description, 0, 2000); }
+                    if (strlen($pickup_location) > 255) { $pickup_location = substr($pickup_location, 0, 255); }
                     if ($remove_image) {
                         $stmt = $conn->prepare("UPDATE items SET title = ?, description = ?, category = ?, condition_status = ?, availability_status = ?, pickup_location = ?, image_url = NULL WHERE item_id = ? AND giver_id = ?");
                         $stmt->bind_param("ssssssii", $title, $description, $category, $condition_status, $availability_status, $pickup_location, $item_id, $_SESSION['user_id']);
@@ -174,7 +185,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if ($stmt->execute()) {
                         $message = "Item updated successfully!";
                     } else {
-                        $error = "Error updating item: " . $conn->error;
+                        $error = "Error updating item.";
                     }
                     $stmt->close();
                 }
@@ -187,11 +198,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if ($stmt->execute()) {
                     $message = "Item deleted successfully!";
                 } else {
-                    $error = "Error deleting item: " . $conn->error;
+                    $error = "Error deleting item.";
                 }
                 $stmt->close();
                 break;
         }
+    }
     }
 }
 
@@ -540,6 +552,7 @@ $items_result = $stmt->get_result();
         <div class="add-item-panel">
             <h3 style="margin-bottom: 20px; color: #333;">➕ Add New Item</h3>
             <form method="POST" enctype="multipart/form-data">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="action" value="add_item">
                 <div class="form-grid">
                     <div class="form-group">
@@ -662,6 +675,7 @@ $items_result = $stmt->get_result();
                 <h3>✏️ Edit Item</h3>
             </div>
             <form method="POST" id="editForm" enctype="multipart/form-data">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="action" value="update_item">
                 <input type="hidden" name="item_id" id="edit_item_id">
                 <div class="form-grid">
@@ -775,6 +789,7 @@ $items_result = $stmt->get_result();
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.innerHTML = `
+                    ${`<?php echo str_replace("`", "\\`", csrf_field()); ?>`}
                     <input type="hidden" name="action" value="delete_item">
                     <input type="hidden" name="item_id" value="${itemId}">
                 `;

@@ -96,7 +96,7 @@ foreach ($all_items as $it) {
         <input class="form-control" type="text" name="q" value="<?php echo htmlspecialchars($q); ?>" placeholder="Search title/desc/username or ID" />
         <select class="form-control" name="status">
             <option value="">All Statuses</option>
-            <?php foreach(['available','pending','unavailable'] as $s): ?><option value="<?php echo $s; ?>" <?php echo $statusF===$s?'selected':''; ?>><?php echo ucfirst($s); ?></option><?php endforeach; ?>
+            <?php foreach(ITEM_STATUSES as $s): ?><option value="<?php echo $s; ?>" <?php echo $statusF===$s?'selected':''; ?>><?php echo ucfirst($s); ?></option><?php endforeach; ?>
         </select>
         <input class="form-control" type="text" name="category" value="<?php echo htmlspecialchars($category); ?>" placeholder="Category" />
         <input class="form-control" type="date" name="from" value="<?php echo htmlspecialchars($from); ?>" />
@@ -166,12 +166,7 @@ foreach ($all_items as $it) {
             </tbody>
         </table>
 
-        <?php if ($total > $perPage): ?>
-        <div style="margin-top:10px;display:flex;gap:8px;">
-            <?php if ($page>1): ?><a class="btn btn-default" href="?<?php echo http_build_query(array_merge($_GET,['page'=>$page-1])); ?>">Prev</a><?php endif; ?>
-            <?php if ($offset + count($all_items) < $total): ?><a class="btn btn-default" href="?<?php echo http_build_query(array_merge($_GET,['page'=>$page+1])); ?>">Next</a><?php endif; ?>
-        </div>
-        <?php endif; ?>
+    <?php render_pagination($page, $perPage, count($all_items), $total); ?>
 
         <?php if (!empty($categories)): ?>
             <div style="margin-top:16px;">
