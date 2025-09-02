@@ -17,13 +17,21 @@ $saved_image_url = null; // relative path stored into DB image_url
 // Processing form data when form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    // CSRF protection
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        echo "Invalid request. Please refresh and try again.";
+        exit;
+    }
+
     // Validate title
     $title = trim((string)($_POST["title"] ?? ''));
     if ($title === '') { $title_err = "Please enter a title for the item."; }
+    elseif (mb_strlen($title) > 150) { $title_err = "Title must be 150 characters or less."; }
 
     // Validate description
     $description = trim((string)($_POST["description"] ?? ''));
     if ($description === '') { $description_err = "Please enter a description for the item."; }
+    elseif (mb_strlen($description) > 2000) { $description_err = "Description must be 2000 characters or less."; }
 
     // Validate category (whitelist basic options)
     $allowed_categories = ['tools','books','electronics','garden','other'];
@@ -35,6 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Validate pickup location (align with schema)
     $pickup_location = trim((string)($_POST["pickup_location"] ?? ''));
     if ($pickup_location === '') { $pickup_location_err = "Please enter the pickup location."; }
+    elseif (mb_strlen($pickup_location) > 255) { $pickup_location_err = "Pickup location must be 255 characters or less."; }
 
     // Validate condition status (enum)
     $allowed_conditions = ['new','like_new','good','fair','poor'];
@@ -154,6 +163,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <h2>Add New Item</h2>
         <p>Please fill this form to add a new item for sharing.</p>
     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" enctype="multipart/form-data">
+            <?php echo csrf_field(); ?>
             <div class="form-group <?php echo (!empty($title_err)) ? 'has-error' : ''; ?>">
                 <label>Title</label>
                 <input type="text" name="title" class="form-control" value="<?php echo htmlspecialchars($title, ENT_QUOTES); ?>">

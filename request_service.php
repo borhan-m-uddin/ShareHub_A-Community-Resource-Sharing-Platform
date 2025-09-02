@@ -33,10 +33,13 @@ if ($service_id) {
 
 // Process request submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) { echo "Invalid request. Please refresh and try again."; exit; }
     $requested_dates = trim($_POST["requested_dates"]);
 
     if (empty($requested_dates)) {
         $request_err = "Please specify the requested dates/duration or details.";
+    } elseif (mb_strlen($requested_dates) > 1000) {
+        $request_err = "Requested details must be 1000 characters or less.";
     } else {
         $sql = "INSERT INTO requests (seeker_id, resource_type, resource_id, requested_dates, status) VALUES (?, ?, ?, ?, ?)";
         if ($stmt = $conn->prepare($sql)) {
@@ -79,6 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <p><strong>Offered by:</strong> <?php echo htmlspecialchars($service["giver_username"]); ?></p>
 
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]) . "?service_id=" . $service_id; ?>" method="post">
+            <?php echo csrf_field(); ?>
             <div class="form-group <?php echo (!empty($request_err)) ? 'has-error' : ''; ?>">
                 <label>Requested Dates/Details</label>
                 <textarea name="requested_dates" class="form-control" placeholder="e.g., Aug 28, 2025 at 3 PM for 2 hours, or specific details of your request"></textarea>

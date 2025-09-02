@@ -30,10 +30,18 @@ if($stmt = $conn->prepare($sql)){
 // Process form submission for updating profile
 if($_SERVER["REQUEST_METHOD"] == "POST"){
 
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        echo "Invalid request. Please refresh and try again.";
+        exit;
+    }
+
     // Validate username
     if(empty(trim($_POST["username"]))){
         $username_err = "Please enter a username.";
     } else{
+        if (!preg_match('/^[A-Za-z0-9]+$/', $_POST['username'])) {
+            $username_err = "Username must contain only letters and numbers.";
+        }
         // Check if username is already taken by another user
         $sql = "SELECT user_id FROM users WHERE username = ? AND user_id != ?";
         if($stmt = $conn->prepare($sql)){
@@ -55,6 +63,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     if(empty(trim($_POST["email"]))){
         $email_err = "Please enter an email.";
     } else{
+        if (!filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL)) {
+            $email_err = "Please enter a valid email address.";
+        }
         // Check if email is already registered by another user
         $sql = "SELECT user_id FROM users WHERE email = ? AND user_id != ?";
         if($stmt = $conn->prepare($sql)){
@@ -88,9 +99,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
     // Validate phone (optional)
     $phone = trim($_POST["phone"]);
+    if ($phone !== '' && mb_strlen($phone) > 30) { $phone_err = "Phone must be 30 characters or less."; }
 
     // Validate address (optional)
     $address = trim($_POST["address"]);
+    if ($address !== '' && mb_strlen($address) > 500) { $address_err = "Address must be 500 characters or less."; }
 
     // Check input errors before updating in database
     if(empty($username_err) && empty($email_err) && empty($first_name_err) && empty($last_name_err)){
@@ -136,6 +149,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         <h2>Manage Your Profile</h2>
         <p>Update your account information below.</p>
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <?php echo csrf_field(); ?>
             <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
                 <label>Username</label>
                 <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($username ?? ''); ?>">

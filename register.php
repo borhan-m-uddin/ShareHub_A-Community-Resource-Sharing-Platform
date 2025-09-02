@@ -5,11 +5,26 @@ $role = 'seeker';
 $username_err = $password_err = $confirm_password_err = $email_err = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        $username_err = $username_err ?: 'Invalid request. Please refresh and try again.';
+    } else {
+        // Parse role early so we can use it when checking email uniqueness per role
+        $raw_role_init = isset($_POST['role']) ? trim((string)$_POST['role']) : '';
+        $sanitized_role_init = preg_replace('/[^a-zA-Z_-]/', '', $raw_role_init);
+        if ($sanitized_role_init !== '' && in_array($sanitized_role_init, ['seeker', 'giver'], true)) {
+            $role = $sanitized_role_init;
+        } else {
+            $role = 'seeker';
+        }
 
     // Validate username
     if (empty(trim($_POST["username"]))) {
         $username_err = "Please enter a username.";
     } else {
+        $trimmedUser = trim($_POST["username"]);
+        if (!preg_match('/^[A-Za-z0-9]+$/', $trimmedUser)) {
+            $username_err = "Username must contain only letters and numbers.";
+        }
         // Prepare a select statement
         $sql = "SELECT user_id FROM users WHERE username = ?";
 
@@ -18,7 +33,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt->bind_param("s", $param_username);
 
             // Set parameters
-            $param_username = trim($_POST["username"]);
+            $param_username = $trimmedUser;
 
             // Attempt to execute the prepared statement
             if ($stmt->execute()) {
@@ -27,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if ($stmt->num_rows == 1) {
                     $username_err = "This username is already taken.";
                 } else {
-                    $username = trim($_POST["username"]);
+                    $username = $trimmedUser;
                 }
             } else {
                 echo "Oops! Something went wrong. Please try again later.";
@@ -42,39 +57,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty(trim($_POST["email"]))) {
         $email_err = "Please enter an email.";
     } else {
-        // Prepare a select statement
-        $sql = "SELECT user_id FROM users WHERE email = ?";
+        $raw_email = trim($_POST["email"]);
+        if (!filter_var($raw_email, FILTER_VALIDATE_EMAIL)) {
+            $email_err = "Please enter a valid email address.";
+        } else {
+            // Prepare a select statement for uniqueness check (per role)
+            $sql = "SELECT user_id FROM users WHERE email = ? AND role = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                // Bind variables to the prepared statement as parameters
+                $stmt->bind_param("ss", $param_email, $param_role_for_email);
 
-        if ($stmt = $conn->prepare($sql)) {
-            // Bind variables to the prepared statement as parameters
-            $stmt->bind_param("s", $param_email);
+                // Set parameters
+                $param_email = $raw_email;
+                $param_role_for_email = $role;
 
-            // Set parameters
-            $param_email = trim($_POST["email"]);
+                // Attempt to execute the prepared statement
+                if ($stmt->execute()) {
+                    $stmt->store_result();
 
-            // Attempt to execute the prepared statement
-            if ($stmt->execute()) {
-                $stmt->store_result();
-
-                if ($stmt->num_rows == 1) {
-                    $email_err = "This email is already registered.";
+                    if ($stmt->num_rows == 1) {
+                        $email_err = "This email is already registered for this role.";
+                    } else {
+                        $email = $raw_email;
+                    }
                 } else {
-                    $email = trim($_POST["email"]);
+                    echo "Oops! Something went wrong. Please try again later.";
                 }
-            } else {
-                echo "Oops! Something went wrong. Please try again later.";
-            }
 
-            // Close statement
-            $stmt->close();
+                // Close statement
+                $stmt->close();
+            }
         }
     }
 
     // Validate password
     if (empty(trim($_POST["password"]))) {
         $password_err = "Please enter a password.";
-    } elseif (strlen(trim($_POST["password"])) < 6) {
-        $password_err = "Password must have at least 6 characters.";
+    } elseif (strlen(trim($_POST["password"])) < 8) {
+        $password_err = "Password must have at least 8 characters.";
+    } elseif (!preg_match('/\\d/', $_POST['password'])) {
+        $password_err = "Password must contain at least one number.";
     } else {
         $password = trim($_POST["password"]);
     }
@@ -130,6 +152,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Close connection
     $conn->close();
+    }
 }
 ?>
 
@@ -146,24 +169,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <h2>Register</h2>
         <p>Please fill this form to create an account.</p>
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <?php echo csrf_field(); ?>
             <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
                 <label>Username</label>
-                <input type="text" name="username" class="form-control" value="<?php echo $username; ?>">
+                <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($username); ?>" pattern="[A-Za-z0-9]+" title="Letters and numbers only" required>
                 <span class="help-block"><?php echo $username_err; ?></span>
             </div>
             <div class="form-group <?php echo (!empty($email_err)) ? 'has-error' : ''; ?>">
                 <label>Email</label>
-                <input type="email" name="email" class="form-control" value="<?php echo $email; ?>">
+                <input type="email" name="email" class="form-control" value="<?php echo htmlspecialchars($email); ?>" required>
                 <span class="help-block"><?php echo $email_err; ?></span>
             </div>
             <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
                 <label>Password</label>
-                <input type="password" name="password" class="form-control" value="<?php echo $password; ?>">
+                <input type="password" name="password" class="form-control" value="<?php echo htmlspecialchars($password); ?>" minlength="8" pattern="(?=.*\\d).{8,}" title="At least 8 characters with at least one number" required>
                 <span class="help-block"><?php echo $password_err; ?></span>
             </div>
             <div class="form-group <?php echo (!empty($confirm_password_err)) ? 'has-error' : ''; ?>">
                 <label>Confirm Password</label>
-                <input type="password" name="confirm_password" class="form-control" value="<?php echo $confirm_password; ?>">
+                <input type="password" name="confirm_password" class="form-control" value="<?php echo htmlspecialchars($confirm_password); ?>" minlength="8" pattern="(?=.*\\d).{8,}" title="At least 8 characters with at least one number" required>
                 <span class="help-block"><?php echo $confirm_password_err; ?></span>
             </div>
             <div class="form-group">

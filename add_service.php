@@ -12,11 +12,18 @@ $title_err = $description_err = $category_err = $expertise_level_err = $availabi
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
 
+    // CSRF protection
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        echo "Invalid request. Please refresh and try again.";
+        exit;
+    }
+
     // Validate title
     if(empty(trim($_POST["title"]))){
         $title_err = "Please enter a title for the service.";
     } else{
         $title = trim($_POST["title"]);
+        if (mb_strlen($title) > 150) { $title_err = "Title must be 150 characters or less."; }
     }
 
     // Validate description
@@ -24,6 +31,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $description_err = "Please enter a description for the service.";
     } else{
         $description = trim($_POST["description"]);
+        if (mb_strlen($description) > 2000) { $description_err = "Description must be 2000 characters or less."; }
     }
 
     // Validate category
@@ -38,6 +46,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $expertise_level_err = "Please enter your expertise level.";
     } else{
         $expertise_level = trim($_POST["expertise_level"]);
+        if (mb_strlen($expertise_level) > 100) { $expertise_level_err = "Expertise must be 100 characters or less."; }
     }
 
     // Validate availability
@@ -45,6 +54,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $availability_err = "Please specify your availability.";
     } else{
         $availability = trim($_POST["availability"]);
+        if (mb_strlen($availability) > 2000) { $availability_err = "Availability must be 2000 characters or less."; }
     }
 
     // Validate preferred exchange
@@ -52,6 +62,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $preferred_exchange_err = "Please specify preferred exchange terms.";
     } else{
         $preferred_exchange = trim($_POST["preferred_exchange"]);
+        if (mb_strlen($preferred_exchange) > 1000) { $preferred_exchange_err = "Preferred exchange must be 1000 characters or less."; }
     }
 
     // Check input errors before inserting in database
@@ -102,6 +113,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         <h2>Add New Service</h2>
         <p>Please fill this form to offer a new service for sharing.</p>
     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <?php echo csrf_field(); ?>
             <div class="form-group <?php echo (!empty($title_err)) ? 'has-error' : ''; ?>">
                 <label>Service Title</label>
                 <input type="text" name="title" class="form-control" value="<?php echo $title; ?>">

@@ -10,12 +10,19 @@ $username = $password = "";
 $username_err = $password_err = $login_err = "";
 
 if($_SERVER["REQUEST_METHOD"] == "POST"){
+    // CSRF
+    if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        $login_err = "Invalid request. Please refresh and try again.";
+    } else {
 
     // Check if username is empty
     if(empty(trim($_POST["username"]))){
         $username_err = "Please enter username.";
     } else{
         $username = trim($_POST["username"]);
+        if (!preg_match('/^[A-Za-z0-9]+$/', $username)) {
+            $username_err = "Username must contain only letters and numbers.";
+        }
     }
 
     // Check if password is empty
@@ -23,6 +30,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $password_err = "Please enter your password.";
     } else{
         $password = trim($_POST["password"]);
+        if (strlen($password) < 8) {
+            $password_err = "Password must have at least 8 characters.";
+        } elseif (!preg_match('/\\d/', $password)) {
+            $password_err = "Password must contain at least one number.";
+        }
     }
 
     // Validate credentials
@@ -77,6 +89,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
     // Close connection
     $conn->close();
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -103,14 +116,15 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         ?>
 
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <?php echo csrf_field(); ?>
             <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
                 <label>Username</label>
-                <input type="text" name="username" class="form-control" value="<?php echo $username; ?>">
+                <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($username); ?>" pattern="[A-Za-z0-9]+" title="Letters and numbers only" required>
                 <span class="help-block"><?php echo $username_err; ?></span>
             </div>
             <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
                 <label>Password</label>
-                <input type="password" name="password" class="form-control">
+                <input type="password" name="password" class="form-control" minlength="8" pattern="(?=.*\\d).{8,}" title="At least 8 characters with at least one number" required>
                 <span class="help-block"><?php echo $password_err; ?></span>
             </div>
             <div class="form-group">
