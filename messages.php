@@ -197,7 +197,7 @@ if($stmt = $conn->prepare($sql)){
                                     <?php echo date('M j, Y g:i A', strtotime($message['sent_date'])); ?>
                                 </span>
                             </div>
-                            <div style="font-weight:800; color:#0f172a;">
+                            <div style="font-weight:800; color: var(--text);">
                                 <?php echo htmlspecialchars($message['subject']); ?>
                             </div>
                             <div class="muted" style="margin-top:3px;">

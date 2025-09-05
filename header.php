@@ -41,7 +41,8 @@
         if(btn){ btn.textContent = (theme === 'dark') ? '☀️' : '🌙'; btn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'); }
     }
     const saved = localStorage.getItem(key);
-    applyTheme(saved || 'light');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(saved || (prefersDark ? 'dark' : 'light'));
     window.addEventListener('DOMContentLoaded', function(){
         const btn = document.getElementById('themeToggle');
         if(!btn) return;

@@ -14,7 +14,7 @@
   <!-- Text -->
   <g transform="translate(140,30)">
     <text x="0" y="48" font-family="Inter,Segoe UI,Arial" font-size="52" font-weight="800" fill="#111827">Share</text>
-  <text x="185" y="48" font-family="Inter,Segoe UI,Arial" font-size="52" font-weight="800" fill="url(#g)">Hub</text>
-    <text x="2" y="86" font-family="Inter,Segoe UI,Arial" font-size="18" fill="#6b7280">A Community Resources Sharing Platform</text>
+    <text x="173" y="48" font-family="Inter,Segoe UI,Arial" font-size="52" font-weight="800" fill="url(#g)">Hub</text>
+    <text x="2" y="86" font-family="Inter,Segoe UI,Arial" font-size="22" fill="#6b7280">A Community Resources Sharing Platform</text>
   </g>
 </svg>

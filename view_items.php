@@ -119,6 +119,23 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Browse Items - Community Resource Platform</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
+    <style>
+    /* Page-specific: equalize card heights and show full images within a fixed area */
+    .item-card { display:flex; flex-direction:column; }
+    .item-card .item-content { flex:1; display:flex; flex-direction:column; }
+    .item-card .card-footer { border-top:1px solid var(--border); display:flex; justify-content:flex-end; }
+    /* Fixed image area using aspect-ratio; image uses contain to avoid cropping */
+    .item-image-wrap { position:relative; width:100%; aspect-ratio: 16/9; background:#f8fafc; border-bottom:1px solid var(--border); }
+    html[data-theme='dark'] .item-image-wrap { background:#0f172a; }
+    .item-image-wrap .item-image { position:absolute; inset:0; width:100%; height:100%; background: transparent; cursor: zoom-in; }
+    /* Card-style hover preview */
+    .image-preview-card { display:none; position:absolute; top:10px; left:50%; transform:translateX(-50%); background: var(--card); border:1px solid var(--border); border-radius:12px; box-shadow: var(--shadow); padding:8px; z-index:100; pointer-events: none; }
+    .image-preview-card img { max-width: 480px; max-height: 60vh; object-fit: contain; border-radius:8px; display:block; }
+    .item-image-wrap:hover .image-preview-card { display:block; }
+    /* Keep description heights similar for neat alignment */
+    .desc { display:-webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow:hidden; }
+
+    </style>
 </head>
 <body>
     <?php render_header(); ?>
@@ -137,7 +154,7 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
         <!-- Search and Filter Panel -->
         <div class="card">
             <div class="card-body">
-            <form method="GET" class="grid" style="grid-template-columns: 2fr 1fr 1fr auto; gap: 15px; align-items: end;">
+            <form method="GET" class="grid" style="grid-template-columns: 2fr 1fr 1fr auto; gap: 15px; align-items: center;">
                 <div class="form-group">
                     <label for="search">Search Items</label>
                     <input type="text" id="search" name="search" class="form-control" 
@@ -176,19 +193,24 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
         <?php if ($items_result->num_rows > 0): ?>
             <div class="grid grid-auto">
                 <?php while ($item = $items_result->fetch_assoc()): ?>
-                    <div class="card">
-                        <?php if (!empty($item['image_url'])): ?>
-                            <img class="item-image" src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
-                        <?php endif; ?>
-                        <div class="card-body">
+                    <div class="card item-card">
+                        <div class="item-image-wrap">
+                            <?php if (!empty($item['image_url'])): ?>
+                                <img class="item-image" src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
+                                <div class="image-preview-card">
+                                    <img src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="">
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="card-body item-content">
                             <h4 style="margin:0 0 6px 0;"><?php echo htmlspecialchars($item['title']); ?></h4>
-                            <div style="color:#6b7280; font-size:0.9rem; margin-bottom:8px;">
+                            <div class="muted" style="font-size:0.9rem; margin-bottom:8px;">
                                 <?php echo htmlspecialchars($item['category']); ?> • Shared by <?php echo htmlspecialchars($item['giver_name']); ?>
                             </div>
                             <?php if (!empty($item['image_url'])): ?>
                                 
                             <?php endif; ?>
-                            <p style="color:#4b5563; line-height:1.5; margin:8px 0 12px 0;">
+                            <p class="muted desc" style="line-height:1.5; margin:8px 0 12px 0;">
                                 <?php echo htmlspecialchars($item['description']); ?>
                             </p>
                             <div class="grid" style="gap:6px;">
@@ -197,7 +219,7 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
                                 <div><strong>Posted:</strong> <?php echo date('M j, Y', strtotime($item['posting_date'])); ?></div>
                             </div>
                         </div>
-                        <div class="card-body" style="border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
+                        <div class="card-footer card-body">
                             <button class="btn btn-success" onclick="requestItem(<?php echo $item['item_id']; ?>, '<?php echo htmlspecialchars($item['title']); ?>')">📨 Request Item</button>
                         </div>
                     </div>

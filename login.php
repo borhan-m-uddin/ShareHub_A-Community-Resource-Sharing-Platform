@@ -7,88 +7,43 @@ if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
 
 
 $username = $password = "";
-$username_err = $password_err = $login_err = "";
+$login_err = "";
 
 if($_SERVER["REQUEST_METHOD"] == "POST"){
     // CSRF
     if (!csrf_verify($_POST['csrf_token'] ?? null)) {
         $login_err = "Invalid request. Please refresh and try again.";
     } else {
+        $username = trim($_POST["username"] ?? "");
+        $password = $_POST["password"] ?? "";
 
-    // Check if username is empty
-    if(empty(trim($_POST["username"]))){
-        $username_err = "Please enter username.";
-    } else{
-        $username = trim($_POST["username"]);
-        if (!preg_match('/^[A-Za-z0-9]+$/', $username)) {
-            $username_err = "Username must contain only letters and numbers.";
-        }
-    }
-
-    // Check if password is empty
-    if(empty(trim($_POST["password"]))){
-        $password_err = "Please enter your password.";
-    } else{
-        $password = trim($_POST["password"]);
-        if (strlen($password) < 8) {
-            $password_err = "Password must have at least 8 characters.";
-        } elseif (!preg_match('/\\d/', $password)) {
-            $password_err = "Password must contain at least one number.";
-        }
-    }
-
-    // Validate credentials
-    if(empty($username_err) && empty($password_err)){
-        // Prepare a select statement
+        // Prepare a select statement and verify credentials only
         $sql = "SELECT user_id, username, password_hash, role FROM users WHERE username = ?";
-
         if($stmt = $conn->prepare($sql)){
-            // Bind variables to the prepared statement as parameters
-            $stmt->bind_param("s", $param_username);
-
-            // Set parameters
-            $param_username = $username;
-
-            // Attempt to execute the prepared statement
+            $stmt->bind_param("s", $username);
             if($stmt->execute()){
-                // Store result
                 $stmt->store_result();
-
-                // Check if username exists, if yes then verify password
-                if($stmt->num_rows == 1){
-                    // Bind result variables
-                    $stmt->bind_result($user_id, $username, $hashed_password, $role);
-                    if($stmt->fetch()){
-                        if(password_verify($password, $hashed_password)){
-                            // Password is correct, store session data (session already started at top of file)
-                            $_SESSION["loggedin"] = true;
-                            $_SESSION["user_id"] = $user_id;
-                            $_SESSION["username"] = $username;
-                            $_SESSION["role"] = $role;
-
-                            // Redirect user to dashboard page and exit
-                            header("location: dashboard.php");
-                            exit;
-                        } else{
-                            // Password is not valid, display a generic error message
-                            $login_err = "Invalid username or password.";
-                        }
+                if($stmt->num_rows === 1){
+                    $stmt->bind_result($user_id, $fetched_username, $hashed_password, $role);
+                    if($stmt->fetch() && password_verify($password, $hashed_password)){
+                        $_SESSION["loggedin"] = true;
+                        $_SESSION["user_id"] = $user_id;
+                        $_SESSION["username"] = $fetched_username;
+                        $_SESSION["role"] = $role;
+                        header("location: dashboard.php");
+                        exit;
+                    } else {
+                        $login_err = "Invalid username or password.";
                     }
-                } else{
-                    // Username doesn't exist, display a generic error message
+                } else {
                     $login_err = "Invalid username or password.";
                 }
-            } else{
+            } else {
                 echo "Oops! Something went wrong. Please try again later.";
             }
-
-            // Close statement
             $stmt->close();
         }
-    }
-
-    // Close connection
-    $conn->close();
+        $conn->close();
     }
 }
 ?>
@@ -117,15 +72,13 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
             <?php echo csrf_field(); ?>
-            <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
+            <div class="form-group">
                 <label>Username</label>
-                <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($username); ?>" pattern="[A-Za-z0-9]+" title="Letters and numbers only" required>
-                <span class="help-block"><?php echo $username_err; ?></span>
+                <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($username); ?>">
             </div>
-            <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
+            <div class="form-group">
                 <label>Password</label>
-                <input type="password" name="password" class="form-control" minlength="8" pattern="(?=.*\\d).{8,}" title="At least 8 characters with at least one number" required>
-                <span class="help-block"><?php echo $password_err; ?></span>
+                <input type="password" name="password" class="form-control">
             </div>
             <div class="form-group">
                 <input type="submit" class="btn btn-primary" value="Login">

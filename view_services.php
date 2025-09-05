@@ -158,10 +158,10 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM services WHERE av
                     <div class="card">
                         <div class="card-body">
                             <h4 style="margin:0 0 6px 0;"><?php echo htmlspecialchars($service['title']); ?></h4>
-                            <div style="color:#6b7280; font-size:0.9rem; margin-bottom:8px;">
+                            <div class="muted" style="font-size:0.9rem; margin-bottom:8px;">
                                 <?php echo htmlspecialchars($service['category']); ?> • Offered by <?php echo htmlspecialchars($service['giver_name']); ?>
                             </div>
-                            <p style="color:#4b5563; line-height:1.5; margin:8px 0 12px 0;">
+                            <p class="muted" style="line-height:1.5; margin:8px 0 12px 0;">
                                 <?php echo htmlspecialchars($service['description']); ?>
                             </p>
                             <div class="grid" style="gap:6px;">

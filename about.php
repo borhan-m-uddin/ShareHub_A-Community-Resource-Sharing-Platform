@@ -70,16 +70,21 @@ try {
         .stat { background:rgba(255,255,255,0.08); padding:12px 16px; border-radius:10px; text-align:center; }
         .stat .num { font-weight:800; font-size:1.25rem; }
 
-        .showcase { margin-top:36px; }
-        .showcase-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
-        .card { background:#fff; padding:14px; border-radius:12px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
-        .card h4 { margin:0 0 8px 0; }
-        .section-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .showcase { margin-top:36px; }
+    .showcase-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+    .card { background: var(--card); color: var(--text); border:1px solid var(--border); padding:14px; border-radius:12px; box-shadow: var(--shadow); }
+    .card h4 { margin:0 0 8px 0; color: var(--text); }
+    .section-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .section-title a { color: var(--text); opacity:.9; font-weight:700; }
+    .section-title a:hover { opacity:1; text-decoration:underline; }
 
-        .testimonials { margin-top:36px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
-        .testimonial { background:#fff; padding:16px; border-radius:12px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
+    .testimonials { margin-top:36px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
+    .testimonial { background: var(--card); color: var(--text); border:1px solid var(--border); padding:16px; border-radius:12px; box-shadow: var(--shadow); }
 
-        footer.site-footer { margin-top:40px; padding:24px 18px; text-align:center; color:#6b7280; }
+    .muted { color: var(--muted); }
+    .meta { margin-top:10px; font-size:0.9rem; color: var(--muted); }
+
+    footer.site-footer { margin-top:40px; padding:24px 18px; text-align:center; color: var(--muted); }
 
         @media (max-width:900px) {
             .home-hero { flex-direction:column; text-align:center; }
@@ -126,8 +131,8 @@ try {
                     <?php foreach ($latest_items as $it): ?>
                         <div class="card">
                             <h4><?php echo htmlspecialchars($it['title']); ?></h4>
-                            <p style="color:#6b7280;font-size:0.95rem;"><?php echo htmlspecialchars(strlen($it['description'])>120?substr($it['description'],0,120).'...':$it['description']); ?></p>
-                            <div style="margin-top:10px;font-size:0.85rem;color:#9ca3af;">Posted: <?php echo date('M j, Y', strtotime($it['posting_date'])); ?></div>
+                            <p class="muted" style="font-size:0.95rem;"><?php echo htmlspecialchars(strlen($it['description'])>120?substr($it['description'],0,120).'...':$it['description']); ?></p>
+                            <div class="meta">Posted: <?php echo date('M j, Y', strtotime($it['posting_date'])); ?></div>
                         </div>
                     <?php endforeach; ?>
                 <?php else: ?>
@@ -146,8 +151,8 @@ try {
                     <?php foreach ($latest_services as $s): ?>
                         <div class="card">
                             <h4><?php echo htmlspecialchars($s['title']); ?></h4>
-                            <p style="color:#6b7280;font-size:0.95rem;"><?php echo htmlspecialchars(strlen($s['description'])>120?substr($s['description'],0,120).'...':$s['description']); ?></p>
-                            <div style="margin-top:10px;font-size:0.85rem;color:#9ca3af;">Posted: <?php echo date('M j, Y', strtotime($s['posting_date'])); ?></div>
+                            <p class="muted" style="font-size:0.95rem;"><?php echo htmlspecialchars(strlen($s['description'])>120?substr($s['description'],0,120).'...':$s['description']); ?></p>
+                            <div class="meta">Posted: <?php echo date('M j, Y', strtotime($s['posting_date'])); ?></div>
                         </div>
                     <?php endforeach; ?>
                 <?php else: ?>

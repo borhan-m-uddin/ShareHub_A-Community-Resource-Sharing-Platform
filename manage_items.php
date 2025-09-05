@@ -550,7 +550,7 @@ $items_result = $stmt->get_result();
 
         <!-- Add New Item Panel -->
         <div class="add-item-panel">
-            <h3 style="margin-bottom: 20px; color: #333;">➕ Add New Item</h3>
+            <h3 style="margin-bottom: 20px; color: var(--text);">➕ Add New Item</h3>
             <form method="POST" enctype="multipart/form-data">
                 <?php echo csrf_field(); ?>
                 <input type="hidden" name="action" value="add_item">
@@ -592,7 +592,7 @@ $items_result = $stmt->get_result();
                     <div class="form-group">
                         <label for="image">Image (Optional)</label>
                         <input type="file" id="image" name="image" class="form-control" accept="image/*">
-                        <small style="color:#666">Accepted: JPG, PNG, GIF, WEBP. Max 2MB.</small>
+                        <small class="muted">Accepted: JPG, PNG, GIF, WEBP. Max 2MB.</small>
                     </div>
                     <div class="form-group full-width">
                         <label for="description">Description *</label>
@@ -605,7 +605,7 @@ $items_result = $stmt->get_result();
         </div>
 
         <!-- Items List -->
-        <h3 style="margin-bottom: 20px; color: #333;">📦 Your Items</h3>
+    <h3 style="margin-bottom: 20px; color: var(--text);">📦 Your Items</h3>
         
         <?php if ($items_result->num_rows > 0): ?>
             <div class="items-grid">
@@ -727,7 +727,7 @@ $items_result = $stmt->get_result();
                     <div class="form-group full-width">
                         <label for="edit_image">Change Image</label>
                         <input type="file" id="edit_image" name="edit_image" class="form-control" accept="image/*">
-                        <small style="color:#666">Leave empty to keep current image. Max 2MB. JPG/PNG/GIF/WEBP.</small>
+                        <small class="muted">Leave empty to keep current image. Max 2MB. JPG/PNG/GIF/WEBP.</small>
                         <div style="margin-top:8px">
                             <label style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="edit_remove_image" name="remove_image" value="1">

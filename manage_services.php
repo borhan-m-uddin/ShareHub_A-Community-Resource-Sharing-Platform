@@ -148,7 +148,7 @@ $services_result = $stmt->get_result();
         </div>
 
         <!-- Services List -->
-        <h3 style="margin: 10px 0 16px 0; color: #333;">⚙️ Your Services</h3>
+    <h3 style="margin: 10px 0 16px 0; color: var(--text);">⚙️ Your Services</h3>
         
         <?php if ($services_result->num_rows > 0): ?>
             <div class="grid grid-auto">
@@ -157,17 +157,17 @@ $services_result = $stmt->get_result();
                         <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
                                 <div style="font-weight:800; font-size:1.05rem;"><?php echo htmlspecialchars($service['title']); ?></div>
-                                <div style="color:#6b7280; font-size:0.9rem; margin-top:2px;"><?php echo htmlspecialchars($service['category']); ?></div>
+                                <div class="muted" style="font-size:0.9rem; margin-top:2px;"><?php echo htmlspecialchars($service['category']); ?></div>
                             </div>
                             <span class="badge badge-<?php echo $service['availability']; ?>"><?php echo ucfirst($service['availability']); ?></span>
                         </div>
                         <div class="card-body">
-                            <div style="color:#4b5563; margin-bottom:12px; line-height:1.5;">
+                            <div class="muted" style="margin-bottom:12px; line-height:1.5;">
                                 <?php echo htmlspecialchars($service['description']); ?>
                             </div>
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <div><span style="font-weight:700; color:#111827;">Location:</span> <?php echo htmlspecialchars($service['location']); ?></div>
-                                <div><span style="font-weight:700; color:#111827;">Posted:</span> <?php echo date('M j, Y', strtotime($service['posting_date'])); ?></div>
+                                <div><span style="font-weight:700; color: var(--text);">Location:</span> <?php echo htmlspecialchars($service['location']); ?></div>
+                                <div><span style="font-weight:700; color: var(--text);">Posted:</span> <?php echo date('M j, Y', strtotime($service['posting_date'])); ?></div>
                             </div>
                         </div>
                         <div class="card-body" style="border-top:1px solid var(--border); display:flex; gap:8px;">

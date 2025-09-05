@@ -178,10 +178,14 @@ if(!empty($reviews_received)){
         <div class="card" style="margin-bottom:16px;">
             <div class="card-body" style="text-align:center;">
             <h3>Your Community Rating</h3>
-            <div style="font-size:2em; font-weight:800; margin:6px 0; color:#b45309; "><?php echo $avg_rating; ?>/5</div>
-            <div class="stars" style="color:#f59e0b;">
+            <div class="text-warning-700" style="font-size:2em; font-weight:800; margin:6px 0; "><?php echo $avg_rating; ?>/5</div>
+            <div class="stars">
                 <?php for($i = 1; $i <= 5; $i++): ?>
-                    <span style="color: <?php echo $i <= $avg_rating ? '#ffc107' : '#ddd'; ?>;">★</span>
+                    <?php if ($i <= floor($avg_rating)): ?>
+                        <span>★</span>
+                    <?php else: ?>
+                        <span class="star-empty">★</span>
+                    <?php endif; ?>
                 <?php endfor; ?>
             </div>
             <p>Based on <?php echo count($reviews_received); ?> review(s)</p>
@@ -259,7 +263,11 @@ if(!empty($reviews_received)){
                             <div class="rating">
                                 <div class="stars">
                                     <?php for($i = 1; $i <= 5; $i++): ?>
-                                        <span style="color: <?php echo $i <= $review['rating'] ? '#ffc107' : '#ddd'; ?>;">★</span>
+                                        <?php if ($i <= (int)$review['rating']): ?>
+                                            <span>★</span>
+                                        <?php else: ?>
+                                            <span class="star-empty">★</span>
+                                        <?php endif; ?>
                                     <?php endfor; ?>
                                 </div>
                                 <strong><?php echo $review['rating']; ?>/5</strong>
@@ -290,7 +298,11 @@ if(!empty($reviews_received)){
                             <div class="rating">
                                 <div class="stars">
                                     <?php for($i = 1; $i <= 5; $i++): ?>
-                                        <span style="color: <?php echo $i <= $review['rating'] ? '#ffc107' : '#ddd'; ?>;">★</span>
+                                        <?php if ($i <= (int)$review['rating']): ?>
+                                            <span>★</span>
+                                        <?php else: ?>
+                                            <span class="star-empty">★</span>
+                                        <?php endif; ?>
                                     <?php endfor; ?>
                                 </div>
                                 <strong><?php echo $review['rating']; ?>/5</strong>
