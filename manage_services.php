@@ -103,7 +103,7 @@ $services_result = $stmt->get_result();
         <?php endif; ?>
 
         <?php if ($error): ?>
-            <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+            <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
         <!-- Add New Service Panel -->
@@ -256,7 +256,7 @@ $services_result = $stmt->get_result();
                         document.getElementById('edit_availability').value = data.service.availability;
                         document.getElementById('edit_location').value = data.service.location;
                         document.getElementById('edit_description').value = data.service.description;
-                        document.getElementById('editModal').style.display = 'block';
+                        document.getElementById('editModal').classList.add('open');
                     } else {
                         alert('Error loading service data');
                     }
@@ -268,7 +268,7 @@ $services_result = $stmt->get_result();
         }
 
         function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
+            document.getElementById('editModal').classList.remove('open');
         }
 
         function deleteService(serviceId, serviceTitle) {
@@ -288,8 +288,8 @@ $services_result = $stmt->get_result();
         // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('editModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
+            if (event.target === modal) {
+                modal.classList.remove('open');
             }
         }
     </script>

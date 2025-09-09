@@ -99,17 +99,26 @@ $sql = "SELECT i.*, u.username as giver_name, u.first_name, u.last_name
         $where_clause 
         ORDER BY i.posting_date DESC";
 
-$stmt = $conn->prepare($sql);
-
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
+if (db_connected()) {
+    $stmt = $conn->prepare($sql);
+    if (!empty($params)) { $stmt->bind_param($types, ...$params); }
+    $stmt->execute();
+    $items_result = $stmt->get_result();
+} else {
+    $items_result = new class {
+        public $num_rows = 0;
+        public function fetch_assoc(){ return null; }
+    };
 }
 
-$stmt->execute();
-$items_result = $stmt->get_result();
-
 // Get categories for filter
-$categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE availability_status = 'available' ORDER BY category");
+$categories_stmt = null;
+if (db_connected()) {
+    if ($catStmt = $conn->prepare("SELECT DISTINCT category FROM items WHERE availability_status = 'available' ORDER BY category")) {
+        $catStmt->execute();
+        $categories_stmt = $catStmt->get_result();
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -148,7 +157,7 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
         <?php endif; ?>
 
         <?php if ($error): ?>
-            <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+            <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
         <!-- Search and Filter Panel -->
@@ -165,12 +174,12 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
                     <label for="category">Category</label>
                     <select id="category" name="category" class="form-control">
                         <option value="">All Categories</option>
-                        <?php while ($cat = $categories_stmt->fetch_assoc()): ?>
-                            <option value="<?php echo htmlspecialchars($cat['category']); ?>" 
+                        <?php if ($categories_stmt): while ($cat = $categories_stmt->fetch_assoc()): ?>
+                            <option value="<?php echo htmlspecialchars($cat['category'], ENT_QUOTES, 'UTF-8'); ?>" 
                                     <?php echo $category_filter === $cat['category'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($cat['category']); ?>
+                                <?php echo htmlspecialchars($cat['category'], ENT_QUOTES, 'UTF-8'); ?>
                             </option>
-                        <?php endwhile; ?>
+                        <?php endwhile; endif; ?>
                     </select>
                 </div>
                 <div class="form-group">
@@ -203,19 +212,19 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
                             <?php endif; ?>
                         </div>
                         <div class="card-body item-content">
-                            <h4 style="margin:0 0 6px 0;"><?php echo htmlspecialchars($item['title']); ?></h4>
+                            <h4 style="margin:0 0 6px 0;"><?php echo htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8'); ?></h4>
                             <div class="muted" style="font-size:0.9rem; margin-bottom:8px;">
-                                <?php echo htmlspecialchars($item['category']); ?> • Shared by <?php echo htmlspecialchars($item['giver_name']); ?>
+                                <?php echo htmlspecialchars($item['category'], ENT_QUOTES, 'UTF-8'); ?> • Shared by <?php echo htmlspecialchars($item['giver_name'], ENT_QUOTES, 'UTF-8'); ?>
                             </div>
                             <?php if (!empty($item['image_url'])): ?>
                                 
                             <?php endif; ?>
                             <p class="muted desc" style="line-height:1.5; margin:8px 0 12px 0;">
-                                <?php echo htmlspecialchars($item['description']); ?>
+                                <?php echo htmlspecialchars($item['description'], ENT_QUOTES, 'UTF-8'); ?>
                             </p>
                             <div class="grid" style="gap:6px;">
                                 <div><strong>Condition:</strong> <span class="badge badge-<?php echo $item['condition_status']; ?>"><?php echo ucfirst(str_replace('_', ' ', $item['condition_status'])); ?></span></div>
-                                <div><strong>Pickup:</strong> <?php echo htmlspecialchars($item['pickup_location']); ?></div>
+                                <div><strong>Pickup:</strong> <?php echo htmlspecialchars($item['pickup_location'], ENT_QUOTES, 'UTF-8'); ?></div>
                                 <div><strong>Posted:</strong> <?php echo date('M j, Y', strtotime($item['posting_date'])); ?></div>
                             </div>
                         </div>
@@ -264,18 +273,18 @@ $categories_stmt = $conn->query("SELECT DISTINCT category FROM items WHERE avail
     <script>
         function requestItem(itemId, itemTitle) {
             document.getElementById('request_item_id').value = itemId;
-            document.getElementById('requestModal').style.display = 'block';
+            document.getElementById('requestModal').classList.add('open');
         }
 
         function closeRequestModal() {
-            document.getElementById('requestModal').style.display = 'none';
+            document.getElementById('requestModal').classList.remove('open');
         }
 
         // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('requestModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
+            if (event.target === modal) {
+                modal.classList.remove('open');
             }
         }
     </script>

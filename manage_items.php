@@ -220,530 +220,197 @@ $items_result = $stmt->get_result();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Items - Community Resource Platform</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-            line-height: 1.6;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 20px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header h1 {
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        .alert-error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .add-item-panel {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group.full-width {
-            grid-column: 1 / -1;
-        }
-
-        .form-group label {
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .form-control {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        textarea.form-control {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #218838;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            color: #333;
-        }
-
-        .btn-warning:hover {
-            background: #e0a800;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #c82333;
-        }
-
-        .btn-sm {
-            padding: 5px 10px;
-            font-size: 12px;
-        }
-
-        .items-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
-        }
-
-        .item-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-
-        .item-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .item-header {
-            background: #28a745;
-            color: white;
-            padding: 15px;
-        }
-
-        .item-title {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .item-category {
-            opacity: 0.9;
-            font-size: 0.9em;
-        }
-
-        .item-body {
-            padding: 20px;
-        }
-
-        .item-image {
-            width: 100%;
-            max-height: 220px;
-            object-fit: cover;
-            border-bottom: 1px solid #eee;
-            display: block;
-            background: #fafafa;
-        }
-
-        .item-description {
-            color: #666;
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-
-        .item-details {
-            margin-bottom: 15px;
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .detail-label {
-            font-weight: bold;
-            color: #333;
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .badge-available { background: #28a745; color: white; }
-        .badge-unavailable { background: #6c757d; color: white; }
-        .badge-pending { background: #ffc107; color: #333; }
-        .badge-new { background: #17a2b8; color: white; }
-        .badge-like_new { background: #20c997; color: white; }
-        .badge-good { background: #28a745; color: white; }
-        .badge-fair { background: #ffc107; color: #333; }
-        .badge-poor { background: #dc3545; color: white; }
-
-        .item-actions {
-            display: flex;
-            gap: 10px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-top: 1px solid #eee;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 2% auto;
-            padding: 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.3);
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #28a745;
-        }
-
-        .modal-header h3 {
-            color: #333;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: #333;
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #6c757d;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s ease;
-        }
-
-        .back-link:hover {
-            background: #5a6268;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-
-        .empty-state h3 {
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        @media (max-width: 768px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .items-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .item-actions {
-                flex-direction: column;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
-    <div class="header">
-        <h1>📦 Manage Your Items</h1>
-        <p style="text-align: center; opacity: 0.9;">Share items with your community</p>
-    </div>
-
-    <div class="container">
+    <?php render_header(); ?>
+    <div class="wrapper">
+        <h2>📦 Manage Your Items</h2>
+        <p class="muted">Share items with your community</p>
         <?php if ($message): ?>
             <div class="alert alert-success"><?php echo htmlspecialchars($message); ?></div>
         <?php endif; ?>
 
         <?php if ($error): ?>
-            <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+            <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
         <!-- Add New Item Panel -->
-        <div class="add-item-panel">
-            <h3 style="margin-bottom: 20px; color: var(--text);">➕ Add New Item</h3>
-            <form method="POST" enctype="multipart/form-data">
-                <?php echo csrf_field(); ?>
-                <input type="hidden" name="action" value="add_item">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="title">Item Title *</label>
-                        <input type="text" id="title" name="title" class="form-control" required>
+        <div class="card" style="margin-top:12px;">
+            <div class="card-body">
+                <h3 style="margin-bottom: 12px;">➕ Add New Item</h3>
+                <form method="POST" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="action" value="add_item">
+                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px; align-items:start;">
+                        <div class="form-group">
+                            <label for="title">Item Title *</label>
+                            <input type="text" id="title" name="title" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" name="category" class="form-control">
+                                <option value="Electronics">Electronics</option>
+                                <option value="Furniture">Furniture</option>
+                                <option value="Clothing">Clothing</option>
+                                <option value="Books">Books</option>
+                                <option value="Kitchen">Kitchen</option>
+                                <option value="Transportation">Transportation</option>
+                                <option value="Sports">Sports</option>
+                                <option value="Education">Education</option>
+                                <option value="Tools">Tools</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="condition_status">Condition</label>
+                            <select id="condition_status" name="condition_status" class="form-control">
+                                <option value="new">New</option>
+                                <option value="like_new">Like New</option>
+                                <option value="good" selected>Good</option>
+                                <option value="fair">Fair</option>
+                                <option value="poor">Poor</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="pickup_location">Pickup Location *</label>
+                            <input type="text" id="pickup_location" name="pickup_location" class="form-control" placeholder="e.g., Downtown, 123 Main St" required>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="image">Image (Optional)</label>
+                            <input type="file" id="image" name="image" class="form-control" accept="image/*">
+                            <small class="muted">Accepted: JPG, PNG, GIF, WEBP. Max 2MB.</small>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="description">Description *</label>
+                            <textarea id="description" name="description" class="form-control" placeholder="Describe your item in detail..." required></textarea>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="category">Category</label>
-                        <select id="category" name="category" class="form-control">
-                            <option value="Electronics">Electronics</option>
-                            <option value="Furniture">Furniture</option>
-                            <option value="Clothing">Clothing</option>
-                            <option value="Books">Books</option>
-                            <option value="Kitchen">Kitchen</option>
-                            <option value="Transportation">Transportation</option>
-                            <option value="Sports">Sports</option>
-                            <option value="Education">Education</option>
-                            <option value="Tools">Tools</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="condition_status">Condition</label>
-                        <select id="condition_status" name="condition_status" class="form-control">
-                            <option value="new">New</option>
-                            <option value="like_new">Like New</option>
-                            <option value="good" selected>Good</option>
-                            <option value="fair">Fair</option>
-                            <option value="poor">Poor</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="pickup_location">Pickup Location *</label>
-                        <input type="text" id="pickup_location" name="pickup_location" class="form-control" 
-                               placeholder="e.g., Downtown, 123 Main St" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="image">Image (Optional)</label>
-                        <input type="file" id="image" name="image" class="form-control" accept="image/*">
-                        <small class="muted">Accepted: JPG, PNG, GIF, WEBP. Max 2MB.</small>
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="description">Description *</label>
-                        <textarea id="description" name="description" class="form-control" 
-                                  placeholder="Describe your item in detail..." required></textarea>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary">➕ Add Item</button>
-            </form>
+                    <button type="submit" class="btn btn-success">➕ Add Item</button>
+                </form>
+            </div>
         </div>
 
         <!-- Items List -->
-    <h3 style="margin-bottom: 20px; color: var(--text);">📦 Your Items</h3>
-        
+        <h3 style="margin: 18px 0 12px;">📦 Your Items</h3>
         <?php if ($items_result->num_rows > 0): ?>
-            <div class="items-grid">
+            <div class="grid grid-auto">
                 <?php while ($item = $items_result->fetch_assoc()): ?>
-                    <div class="item-card">
-                        <div class="item-header">
-                            <div class="item-title"><?php echo htmlspecialchars($item['title']); ?></div>
-                            <div class="item-category"><?php echo htmlspecialchars($item['category']); ?></div>
-                        </div>
-                        <div class="item-body">
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+                                <div style="font-weight:800; font-size:1.05rem;"><?php echo htmlspecialchars($item['title']); ?></div>
+                                <div class="muted"><?php echo htmlspecialchars($item['category']); ?></div>
+                            </div>
                             <?php if (!empty($item['image_url'])): ?>
-                                <img class="item-image" src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
+                                <img style="width:100%;max-height:220px;object-fit:cover;border:1px solid var(--border);border-radius:8px;margin-top:8px;background:var(--card);" src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
                             <?php endif; ?>
-                            <div class="item-description">
-                                <?php echo htmlspecialchars($item['description']); ?>
-                            </div>
-                            <div class="item-details">
-                                <div class="detail-row">
-                                    <span class="detail-label">Status:</span>
-                                    <span class="badge badge-<?php echo $item['availability_status']; ?>">
-                                        <?php echo ucfirst($item['availability_status']); ?>
-                                    </span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Condition:</span>
-                                    <span class="badge badge-<?php echo $item['condition_status']; ?>">
-                                        <?php echo ucfirst(str_replace('_', ' ', $item['condition_status'])); ?>
-                                    </span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Location:</span>
-                                    <span><?php echo htmlspecialchars($item['pickup_location']); ?></span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">Posted:</span>
-                                    <span><?php echo date('M j, Y', strtotime($item['posting_date'])); ?></span>
-                                </div>
+                            <p class="muted" style="line-height:1.55;margin:8px 0 10px;"><?php echo htmlspecialchars($item['description']); ?></p>
+                            <div class="grid" style="gap:8px;grid-template-columns: repeat(2, minmax(0,1fr));">
+                                <div><strong>Status:</strong> <span class="badge badge-<?php echo $item['availability_status']; ?>"><?php echo ucfirst($item['availability_status']); ?></span></div>
+                                <div><strong>Condition:</strong> <span class="badge badge-<?php echo $item['condition_status']; ?>"><?php echo ucfirst(str_replace('_', ' ', $item['condition_status'])); ?></span></div>
+                                <div><strong>Location:</strong> <?php echo htmlspecialchars($item['pickup_location']); ?></div>
+                                <div><strong>Posted:</strong> <?php echo date('M j, Y', strtotime($item['posting_date'])); ?></div>
                             </div>
                         </div>
-                        <div class="item-actions">
-                            <button class="btn btn-warning btn-sm" onclick="editItem(<?php echo $item['item_id']; ?>)">
-                                ✏️ Edit
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteItem(<?php echo $item['item_id']; ?>, '<?php echo htmlspecialchars($item['title']); ?>')">
-                                🗑️ Delete
-                            </button>
+                        <div class="card-body" style="border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end;">
+                            <button class="btn btn-warning btn-sm" onclick="editItem(<?php echo $item['item_id']; ?>)">✏️ Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteItem(<?php echo $item['item_id']; ?>, '<?php echo htmlspecialchars($item['title']); ?>')">🗑️ Delete</button>
                         </div>
                     </div>
                 <?php endwhile; ?>
             </div>
         <?php else: ?>
-            <div class="empty-state">
-                <h3>📦 No Items Yet</h3>
-                <p>Start sharing by adding your first item above!</p>
-                <p>Items you share will appear here and be visible to the community.</p>
+            <div class="alert-info" style="padding:16px;border-radius:12px;">
+                <h4>📦 No Items Yet</h4>
+                <p>Start sharing by adding your first item above! Items you share will appear here and be visible to the community.</p>
             </div>
         <?php endif; ?>
 
-        <a href="dashboard.php" class="back-link">← Back to Dashboard</a>
+        <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-default" style="margin-top:16px;">← Back to Dashboard</a>
     </div>
 
     <!-- Edit Item Modal -->
     <div id="editModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-card">
             <div class="modal-header">
-                <span class="close" onclick="closeEditModal()">&times;</span>
                 <h3>✏️ Edit Item</h3>
             </div>
-            <form method="POST" id="editForm" enctype="multipart/form-data">
-                <?php echo csrf_field(); ?>
-                <input type="hidden" name="action" value="update_item">
-                <input type="hidden" name="item_id" id="edit_item_id">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="edit_title">Item Title *</label>
-                        <input type="text" id="edit_title" name="title" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_category">Category</label>
-                        <select id="edit_category" name="category" class="form-control">
-                            <option value="Electronics">Electronics</option>
-                            <option value="Furniture">Furniture</option>
-                            <option value="Clothing">Clothing</option>
-                            <option value="Books">Books</option>
-                            <option value="Kitchen">Kitchen</option>
-                            <option value="Transportation">Transportation</option>
-                            <option value="Sports">Sports</option>
-                            <option value="Education">Education</option>
-                            <option value="Tools">Tools</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_condition_status">Condition</label>
-                        <select id="edit_condition_status" name="condition_status" class="form-control">
-                            <option value="new">New</option>
-                            <option value="like_new">Like New</option>
-                            <option value="good">Good</option>
-                            <option value="fair">Fair</option>
-                            <option value="poor">Poor</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_availability_status">Availability</label>
-                        <select id="edit_availability_status" name="availability_status" class="form-control">
-                            <option value="available">Available</option>
-                            <option value="pending">Pending</option>
-                            <option value="unavailable">Unavailable</option>
-                        </select>
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="edit_pickup_location">Pickup Location *</label>
-                        <input type="text" id="edit_pickup_location" name="pickup_location" class="form-control" required>
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="edit_description">Description *</label>
-                        <textarea id="edit_description" name="description" class="form-control" required></textarea>
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="edit_image">Change Image</label>
-                        <input type="file" id="edit_image" name="edit_image" class="form-control" accept="image/*">
-                        <small class="muted">Leave empty to keep current image. Max 2MB. JPG/PNG/GIF/WEBP.</small>
-                        <div style="margin-top:8px">
-                            <label style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="edit_remove_image" name="remove_image" value="1">
-                                Remove current image
-                            </label>
+            <div class="modal-body">
+                <form method="POST" id="editForm" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="action" value="update_item">
+                    <input type="hidden" name="item_id" id="edit_item_id">
+                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label for="edit_title">Item Title *</label>
+                            <input type="text" id="edit_title" name="title" class="form-control" required>
                         </div>
-                        <img id="edit_current_image" src="" alt="Current image" style="margin-top:10px;max-width:100%;max-height:220px;display:none;border:1px solid #eee;border-radius:6px;object-fit:cover;">
+                        <div class="form-group">
+                            <label for="edit_category">Category</label>
+                            <select id="edit_category" name="category" class="form-control">
+                                <option value="Electronics">Electronics</option>
+                                <option value="Furniture">Furniture</option>
+                                <option value="Clothing">Clothing</option>
+                                <option value="Books">Books</option>
+                                <option value="Kitchen">Kitchen</option>
+                                <option value="Transportation">Transportation</option>
+                                <option value="Sports">Sports</option>
+                                <option value="Education">Education</option>
+                                <option value="Tools">Tools</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_condition_status">Condition</label>
+                            <select id="edit_condition_status" name="condition_status" class="form-control">
+                                <option value="new">New</option>
+                                <option value="like_new">Like New</option>
+                                <option value="good">Good</option>
+                                <option value="fair">Fair</option>
+                                <option value="poor">Poor</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_availability_status">Availability</label>
+                            <select id="edit_availability_status" name="availability_status" class="form-control">
+                                <option value="available">Available</option>
+                                <option value="pending">Pending</option>
+                                <option value="unavailable">Unavailable</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="edit_pickup_location">Pickup Location *</label>
+                            <input type="text" id="edit_pickup_location" name="pickup_location" class="form-control" required>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="edit_description">Description *</label>
+                            <textarea id="edit_description" name="description" class="form-control" required></textarea>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="edit_image">Change Image</label>
+                            <input type="file" id="edit_image" name="edit_image" class="form-control" accept="image/*">
+                            <small class="muted">Leave empty to keep current image. Max 2MB. JPG/PNG/GIF/WEBP.</small>
+                            <div style="margin-top:8px">
+                                <label style="display:flex;align-items:center;gap:8px;">
+                                    <input type="checkbox" id="edit_remove_image" name="remove_image" value="1">
+                                    Remove current image
+                                </label>
+                            </div>
+                            <img id="edit_current_image" src="" alt="Current image" style="margin-top:10px;max-width:100%;max-height:220px;display:none;border:1px solid var(--border);border-radius:6px;object-fit:cover;">
+                        </div>
                     </div>
-                </div>
-                <button type="submit" class="btn btn-warning">✏️ Update Item</button>
-            </form>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-default" onclick="closeEditModal()">Cancel</button>
+                        <button type="submit" class="btn btn-warning">✏️ Update Item</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
     <script>
-        function editItem(itemId) {
+    function editItem(itemId) {
             // Get item data from the server
             fetch(`get_item.php?id=${itemId}`)
                 .then(response => response.json())
@@ -769,7 +436,7 @@ $items_result = $stmt->get_result();
                             removeCb.checked = false;
                             removeCb.disabled = true;
                         }
-                        document.getElementById('editModal').style.display = 'block';
+                        document.getElementById('editModal').classList.add('open');
                     } else {
                         alert('Error loading item data');
                     }
@@ -781,7 +448,7 @@ $items_result = $stmt->get_result();
         }
 
         function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
+            document.getElementById('editModal').classList.remove('open');
         }
 
         function deleteItem(itemId, itemTitle) {
@@ -801,10 +468,9 @@ $items_result = $stmt->get_result();
         // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('editModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
+            if (event.target === modal) {
+                modal.classList.remove('open');
             }
         }
     </script>
-</body>
-</html>
+    <?php render_footer(); ?>

@@ -6,14 +6,14 @@
 <header class="site-header">
     <div class="container">
         <div class="brand">
-            <a href="<?php echo site_href('about.php'); ?>" style="display:flex;align-items:center;text-decoration:none;color:inherit;">
+            <a href="<?php echo site_href('index.php'); ?>" style="display:flex;align-items:center;text-decoration:none;color:inherit;">
                 <img src="<?php echo asset_url('assets/brand/logo-text.svg'); ?>" alt="ShareHub logo" class="site-logo" />
             </a>
         </div>
         <nav class="site-nav">
-            <a href="<?php echo site_href('index.php'); ?>">Home</a>
+            <?php $homeHref = !empty($_SESSION['loggedin']) ? site_href('dashboard.php') : site_href('index.php'); ?>
+            <a href="<?php echo $homeHref; ?>">Home</a>
             <?php if (!empty($_SESSION['loggedin'])): ?>
-                <a href="<?php echo site_href('dashboard.php'); ?>">Dashboard</a>
                 <?php if(isset($_SESSION['role']) && $_SESSION['role']==='admin'): ?>
                     <a href="<?php echo site_href('admin/panel.php'); ?>">Admin Panel</a>
                     <a href="<?php echo site_href('admin/requests.php'); ?>">Requests</a>
@@ -53,5 +53,22 @@
             applyTheme(next);
         });
     });
+})();
+// Expose header height as CSS var for perfect auth centering
+(function(){
+    function setHeaderHeightVar(){
+        var header = document.querySelector('.site-header');
+        if(!header) return;
+        var h = header.offsetHeight || 64;
+        document.documentElement.style.setProperty('--header-h', h + 'px');
+    }
+    window.addEventListener('load', setHeaderHeightVar);
+    window.addEventListener('resize', setHeaderHeightVar);
+    // Also update after fonts/images change layout
+    var ro = window.ResizeObserver ? new ResizeObserver(setHeaderHeightVar) : null;
+    if(ro){
+        var header = document.querySelector('.site-header');
+        if(header) ro.observe(header);
+    }
 })();
 </script>

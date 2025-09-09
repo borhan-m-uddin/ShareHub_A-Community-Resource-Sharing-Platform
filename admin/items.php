@@ -81,6 +81,7 @@ foreach ($all_items as $it) {
     <meta charset="UTF-8" />
     <title>Manage All Items - Admin</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>" />
+    
 </head>
 <body>
 <?php render_header(); ?>
@@ -114,38 +115,38 @@ foreach ($all_items as $it) {
     </div>
 
     <?php if (!empty($all_items)): ?>
-        <table class="table">
+    <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Description</th>
-                    <th>Category</th>
-                    <th>Condition</th>
-                    <th>Status</th>
-                    <th>Giver</th>
-                    <th>Posted</th>
-                    <th>Location</th>
-                    <th>Admin Actions</th>
+            <th class="td-id">ID</th>
+            <th class="td-title">Title</th>
+            <th class="td-desc">Description</th>
+            <th class="td-category">Category</th>
+            <!-- <th class="td-condition">Condition</th> -->
+            <th class="td-status">Status</th>
+            <th class="td-giver">Giver</th>
+            <th class="td-posted">Posted</th>
+            <th class="td-location">Location</th>
+            <th class="td-actions">Admin Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($all_items as $item): ?>
                     <tr>
-                        <td><?php echo $item["item_id"]; ?></td>
-                        <td><strong><?php echo htmlspecialchars($item["title"]); ?></strong></td>
-                        <td><?php echo htmlspecialchars(substr($item["description"], 0, 80)); ?><?php echo strlen($item["description"]) > 80 ? '...' : ''; ?></td>
-                        <td><?php echo htmlspecialchars($item["category"] ?: 'N/A'); ?></td>
-                        <td><?php echo htmlspecialchars(ucfirst($item["condition_status"])); ?></td>
-                        <td class="status-<?php echo $item["availability_status"]; ?>"><?php echo htmlspecialchars(ucfirst($item["availability_status"])); ?></td>
-                        <td>
+                        <td class="td-id"><?php echo $item["item_id"]; ?></td>
+                        <td class="td-title"><strong><?php echo htmlspecialchars($item["title"]); ?></strong></td>
+                        <td class="td-desc"><?php echo htmlspecialchars($item["description"]); ?></td>
+                        <td class="td-category"><?php echo htmlspecialchars($item["category"] ?: 'N/A'); ?></td>
+                        <!-- <td class="td-condition"><?php echo htmlspecialchars(ucfirst($item["condition_status"])); ?></td> -->
+                        <td class="td-status status-<?php echo $item["availability_status"]; ?>"><?php echo htmlspecialchars(ucfirst($item["availability_status"])); ?></td>
+                        <td class="td-giver">
                             <?php echo htmlspecialchars($item["username"]); ?><br>
                             <small><?php echo htmlspecialchars($item["email"]); ?></small>
                         </td>
-                        <td><?php echo date('M j, Y', strtotime($item["posting_date"])); ?></td>
-                        <td><?php echo htmlspecialchars($item["pickup_location"] ?: 'Not specified'); ?></td>
-                        <td class="action-buttons">
-                            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+                        <td class="td-posted"><?php echo date('M j, Y', strtotime($item["posting_date"])); ?></td>
+                        <td class="td-location"><?php echo htmlspecialchars($item["pickup_location"] ?: 'Not specified'); ?></td>
+                        <td class="td-actions">
+                            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" style="display:inline-block; margin-right:8px;">
                                 <?php echo csrf_field(); ?>
                                 <input type="hidden" name="item_id" value="<?php echo $item["item_id"]; ?>">
                                 <select name="new_status" onchange="this.form.submit()" class="form-control">
@@ -155,7 +156,7 @@ foreach ($all_items as $it) {
                                     <option value="unavailable" <?php echo ($item["availability_status"] == "unavailable") ? "selected" : ""; ?>>Unavailable</option>
                                 </select>
                             </form>
-                            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" onsubmit="return confirm('Are you sure you want to delete this item? This action cannot be undone.');">
+                            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" onsubmit="return confirm('Are you sure you want to delete this item? This action cannot be undone.');" style="display:inline-block;">
                                 <?php echo csrf_field(); ?>
                                 <input type="hidden" name="delete_item_id" value="<?php echo $item["item_id"]; ?>">
                                 <input type="submit" class="btn btn-danger" value="🗑️ Delete">
@@ -164,7 +165,7 @@ foreach ($all_items as $it) {
                     </tr>
                 <?php endforeach; ?>
             </tbody>
-        </table>
+    </table>
 
     <?php render_pagination($page, $perPage, count($all_items), $total); ?>
 

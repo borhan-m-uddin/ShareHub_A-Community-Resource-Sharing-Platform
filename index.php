@@ -2,6 +2,12 @@
 // Make About page the home. Use bootstrap for session/db.
 require_once __DIR__ . '/bootstrap.php';
 
+// If already logged in, send to role-aware dashboard
+if (($_SERVER["REQUEST_METHOD"] ?? 'GET') === 'GET' && !empty($_SESSION['loggedin'])) {
+    header('Location: ' . site_href('dashboard.php'));
+    exit;
+}
+
 // If a login POST occurred, process it and redirect to dashboard on success
 if ($_SERVER["REQUEST_METHOD"] === 'POST' && isset($_POST['username']) && isset($_POST['password'])) {
     $username = trim($_POST['username']);
@@ -31,7 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] === 'POST' && isset($_POST['username']) && isset(
     // On failure, fall through to redirect to about page
 }
 
-// For GET and other requests, redirect to about.php as home
-header('Location: ' . site_href('about.php'));
+// For GET and other requests, redirect to the alternative home page
+header('Location: ' . site_href('about_alt.php'));
 exit;
 ?>

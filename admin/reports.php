@@ -15,17 +15,43 @@ if (!in_array($role, ['', 'admin','giver','seeker'], true)) { $role = ''; }
 
 // Gather distinct categories for the filter dropdown
 $all_categories = [];
+// Static query (no user input); safe to run directly
 if ($res = $conn->query("SELECT DISTINCT category FROM items WHERE category IS NOT NULL AND category <> '' UNION SELECT DISTINCT category FROM services WHERE category IS NOT NULL AND category <> '' ORDER BY category")) {
     while ($r = $res->fetch_row()) { $all_categories[] = $r[0]; }
     $res->free();
 }
 
-// Helper to construct date conditions for a date column
-$date_cond = function($col) use ($from, $to) {
-    $parts = [];
-    if ($from) { $parts[] = "DATE($col) >= '" . $from . "'"; }
-    if ($to) { $parts[] = "DATE($col) <= '" . $to . "'"; }
-    return $parts ? (' AND ' . implode(' AND ', $parts)) : '';
+// Helpers to construct WHERE conditions and bind params for prepared statements
+$build_date_cond = function($col, &$types, &$params, &$whereParts) use ($from, $to) {
+    if ($from) { $whereParts[] = "DATE($col) >= ?"; $types .= 's'; $params[] = $from; }
+    if ($to) { $whereParts[] = "DATE($col) <= ?"; $types .= 's'; $params[] = $to; }
+};
+
+$prepare_and_fetch_assoc = function($sql, $types, $params) use ($conn) {
+    $row = null;
+    if ($stmt = $conn->prepare($sql)) {
+        if ($types !== '') { $stmt->bind_param($types, ...$params); }
+        if ($stmt->execute()) {
+            $res = $stmt->get_result();
+            $row = $res ? $res->fetch_assoc() : null;
+            if ($res) { $res->free(); }
+        }
+        $stmt->close();
+    }
+    return $row;
+};
+
+$prepare_and_stream_rows = function($sql, $types, $params, $cb) use ($conn) {
+    if ($stmt = $conn->prepare($sql)) {
+        if ($types !== '') { $stmt->bind_param($types, ...$params); }
+        if ($stmt->execute()) {
+            if ($res = $stmt->get_result()) {
+                while ($row = $res->fetch_assoc()) { $cb($row); }
+                $res->free();
+            }
+        }
+        $stmt->close();
+    }
 };
 
 // Build filter query string for links (export, etc.)
@@ -49,86 +75,82 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv' && isset($_GET['type']))
 
     switch ($type) {
         case 'users':
-            $cond = 'WHERE 1=1';
-            if ($role) { $cond .= " AND role='".$conn->real_escape_string($role)."'"; }
-            $cond .= $date_cond('registration_date');
-            $sql = "SELECT user_id, username, role, status, registration_date FROM users $cond ORDER BY registration_date DESC LIMIT $limit";
+            $where = [];$params=[];$types='';
+            if ($role) { $where[] = "role = ?"; $types.='s'; $params[] = $role; }
+            $build_date_cond('registration_date', $types, $params, $where);
+            $sql = "SELECT user_id, username, role, status, registration_date FROM users " .
+                   (count($where)?('WHERE '.implode(' AND ',$where)):'') .
+                   " ORDER BY registration_date DESC LIMIT $limit";
             fputcsv($out, ['user_id','username','role','status','registration_date'], ',', '"', '\\', "\r\n");
             break;
         case 'items':
-            $cond = 'WHERE 1=1';
-            if ($category) { $cond .= " AND category='".$conn->real_escape_string($category)."'"; }
-            $cond .= $date_cond('posting_date');
-            $sql = "SELECT item_id, title, category, availability_status, posting_date FROM items $cond ORDER BY posting_date DESC LIMIT $limit";
+            $where = [];$params=[];$types='';
+            if ($category) { $where[] = "category = ?"; $types.='s'; $params[] = $category; }
+            $build_date_cond('posting_date', $types, $params, $where);
+            $sql = "SELECT item_id, title, category, availability_status, posting_date FROM items " .
+                   (count($where)?('WHERE '.implode(' AND ',$where)):'') .
+                   " ORDER BY posting_date DESC LIMIT $limit";
             fputcsv($out, ['item_id','title','category','availability_status','posting_date'], ',', '"', '\\', "\r\n");
             break;
         case 'services':
-            $cond = 'WHERE 1=1';
-            if ($category) { $cond .= " AND category='".$conn->real_escape_string($category)."'"; }
-            $cond .= $date_cond('posting_date');
-            $sql = "SELECT service_id, title, category, availability, posting_date FROM services $cond ORDER BY posting_date DESC LIMIT $limit";
+            $where = [];$params=[];$types='';
+            if ($category) { $where[] = "category = ?"; $types.='s'; $params[] = $category; }
+            $build_date_cond('posting_date', $types, $params, $where);
+            $sql = "SELECT service_id, title, category, availability, posting_date FROM services " .
+                   (count($where)?('WHERE '.implode(' AND ',$where)):'') .
+                   " ORDER BY posting_date DESC LIMIT $limit";
             fputcsv($out, ['service_id','title','category','availability','posting_date'], ',', '"', '\\', "\r\n");
             break;
         case 'requests':
-            $cond = 'WHERE 1=1';
-            $cond .= $date_cond('request_date');
-            $sql = "SELECT request_id, request_type, status, request_date FROM requests $cond ORDER BY request_date DESC LIMIT $limit";
+            $where = [];$params=[];$types='';
+            $build_date_cond('request_date', $types, $params, $where);
+            $sql = "SELECT request_id, request_type, status, request_date FROM requests " .
+                   (count($where)?('WHERE '.implode(' AND ',$where)):'') .
+                   " ORDER BY request_date DESC LIMIT $limit";
             fputcsv($out, ['request_id','request_type','status','request_date'], ',', '"', '\\', "\r\n");
             break;
         case 'reviews':
-            $cond = 'WHERE 1=1';
-            $cond .= $date_cond('review_date');
-            $sql = "SELECT review_id, rating, review_date FROM reviews $cond ORDER BY review_date DESC LIMIT $limit";
+            $where = [];$params=[];$types='';
+            $build_date_cond('review_date', $types, $params, $where);
+            $sql = "SELECT review_id, rating, review_date FROM reviews " .
+                   (count($where)?('WHERE '.implode(' AND ',$where)):'') .
+                   " ORDER BY review_date DESC LIMIT $limit";
             fputcsv($out, ['review_id','rating','review_date'], ',', '"', '\\', "\r\n");
             break;
         case 'messages':
-            $cond = 'WHERE 1=1';
-            $cond .= $date_cond('sent_date');
-            $sql = "SELECT message_id, sender_id, receiver_id, is_read, sent_date FROM messages $cond ORDER BY sent_date DESC LIMIT $limit";
+            $where = [];$params=[];$types='';
+            $build_date_cond('sent_date', $types, $params, $where);
+            $sql = "SELECT message_id, sender_id, receiver_id, is_read, sent_date FROM messages " .
+                   (count($where)?('WHERE '.implode(' AND ',$where)):'') .
+                   " ORDER BY sent_date DESC LIMIT $limit";
             fputcsv($out, ['message_id','sender_id','receiver_id','is_read','sent_date'], ',', '"', '\\', "\r\n");
             break;
         default:
             $sql = '';
     }
-
     if ($sql) {
-        if ($res = $conn->query($sql)) {
-            while ($row = $res->fetch_assoc()) {
-                switch ($type) {
-                    case 'users':
-                        fputcsv($out, [
-                            $row['user_id'], $row['username'], $row['role'], $row['status'], $row['registration_date']
-                        ], ',', '"', '\\', "\r\n");
-                        break;
-                    case 'items':
-                        fputcsv($out, [
-                            $row['item_id'], $row['title'], $row['category'], $row['availability_status'], $row['posting_date']
-                        ], ',', '"', '\\', "\r\n");
-                        break;
-                    case 'services':
-                        fputcsv($out, [
-                            $row['service_id'], $row['title'], $row['category'], $row['availability'], $row['posting_date']
-                        ], ',', '"', '\\', "\r\n");
-                        break;
-                    case 'requests':
-                        fputcsv($out, [
-                            $row['request_id'], $row['request_type'], $row['status'], $row['request_date']
-                        ], ',', '"', '\\', "\r\n");
-                        break;
-                    case 'reviews':
-                        fputcsv($out, [
-                            $row['review_id'], $row['rating'], $row['review_date']
-                        ], ',', '"', '\\', "\r\n");
-                        break;
-                    case 'messages':
-                        fputcsv($out, [
-                            $row['message_id'], $row['sender_id'], $row['receiver_id'], $row['is_read'], $row['sent_date']
-                        ], ',', '"', '\\', "\r\n");
-                        break;
-                }
+        $prepare_and_stream_rows($sql, $types ?? '', $params ?? [], function($row) use ($type, $out) {
+            switch ($type) {
+                case 'users':
+                    fputcsv($out, [ $row['user_id'], $row['username'], $row['role'], $row['status'], $row['registration_date'] ], ',', '"', '\\', "\r\n");
+                    break;
+                case 'items':
+                    fputcsv($out, [ $row['item_id'], $row['title'], $row['category'], $row['availability_status'], $row['posting_date'] ], ',', '"', '\\', "\r\n");
+                    break;
+                case 'services':
+                    fputcsv($out, [ $row['service_id'], $row['title'], $row['category'], $row['availability'], $row['posting_date'] ], ',', '"', '\\', "\r\n");
+                    break;
+                case 'requests':
+                    fputcsv($out, [ $row['request_id'], $row['request_type'], $row['status'], $row['request_date'] ], ',', '"', '\\', "\r\n");
+                    break;
+                case 'reviews':
+                    fputcsv($out, [ $row['review_id'], $row['rating'], $row['review_date'] ], ',', '"', '\\', "\r\n");
+                    break;
+                case 'messages':
+                    fputcsv($out, [ $row['message_id'], $row['sender_id'], $row['receiver_id'], $row['is_read'], $row['sent_date'] ], ',', '"', '\\', "\r\n");
+                    break;
             }
-            $res->free();
-        }
+        });
     }
     fclose($out);
     exit;
@@ -137,83 +159,70 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv' && isset($_GET['type']))
 
 // Users statistics
 $users = ['total'=>0,'admin'=>0,'giver'=>0,'seeker'=>0,'active'=>0,'new_today'=>0,'new_week'=>0,'new_month'=>0];
-$cond = 'WHERE 1=1';
-if ($role) { $cond .= " AND role='".$conn->real_escape_string($role)."'"; }
-$cond .= $date_cond('registration_date');
+$w=[];$p=[];$t='';
+if ($role) { $w[] = "role = ?"; $t.='s'; $p[]=$role; }
+$build_date_cond('registration_date', $t, $p, $w);
 $sql = "SELECT COUNT(*) total,
-               SUM(role='admin') admin,
-               SUM(role='giver') giver,
-               SUM(role='seeker') seeker,
-               SUM(status=1) active,
-               SUM(DATE(registration_date)=CURDATE()) new_today,
-               SUM(DATE(registration_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) new_week,
-               SUM(DATE(registration_date)>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)) new_month
-        FROM users $cond";
-if ($res = $conn->query($sql)) {
-    $row = $res->fetch_assoc();
-    foreach ($users as $k => $v) { if (isset($row[$k])) $users[$k] = (int)$row[$k]; }
-    $res->free();
-}
+           SUM(role='admin') admin,
+           SUM(role='giver') giver,
+           SUM(role='seeker') seeker,
+           SUM(status=1) active,
+           SUM(DATE(registration_date)=CURDATE()) new_today,
+           SUM(DATE(registration_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) new_week,
+           SUM(DATE(registration_date)>=DATE_SUB(CURDATE(), INTERVAL 30 DAY)) new_month
+    FROM users ".(count($w)?('WHERE '.implode(' AND ',$w)):'');
+$row = $prepare_and_fetch_assoc($sql, $t, $p);
+if ($row) { foreach ($users as $k => $v) { if (isset($row[$k])) $users[$k] = (int)$row[$k]; } }
 
 // Items statistics
 $items = ['total'=>0,'available'=>0,'pending'=>0,'unavailable'=>0,'today'=>0,'week'=>0];
-$cond = 'WHERE 1=1';
-if ($category) { $cond .= " AND category='".$conn->real_escape_string($category)."'"; }
-$cond .= $date_cond('posting_date');
+$w=[];$p=[];$t='';
+if ($category) { $w[] = "category = ?"; $t.='s'; $p[]=$category; }
+$build_date_cond('posting_date', $t, $p, $w);
 $sql = "SELECT COUNT(*) total,
-               SUM(availability_status='available') available,
-               SUM(availability_status='pending') pending,
-               SUM(availability_status='unavailable') unavailable,
-               SUM(DATE(posting_date)=CURDATE()) today,
-               SUM(DATE(posting_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) week
-        FROM items $cond";
-if ($res = $conn->query($sql)) {
-    $row = $res->fetch_assoc();
-    foreach ($items as $k => $v) { if (isset($row[$k])) $items[$k] = (int)$row[$k]; }
-    $res->free();
-}
+           SUM(availability_status='available') available,
+           SUM(availability_status='pending') pending,
+           SUM(availability_status='unavailable') unavailable,
+           SUM(DATE(posting_date)=CURDATE()) today,
+           SUM(DATE(posting_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) week
+    FROM items ".(count($w)?('WHERE '.implode(' AND ',$w)):'');
+$row = $prepare_and_fetch_assoc($sql, $t, $p);
+if ($row) { foreach ($items as $k => $v) { if (isset($row[$k])) $items[$k] = (int)$row[$k]; } }
 
 // Services statistics
 $services = ['total'=>0,'available'=>0,'busy'=>0,'unavailable'=>0,'today'=>0,'week'=>0];
-$cond = 'WHERE 1=1';
-if ($category) { $cond .= " AND category='".$conn->real_escape_string($category)."'"; }
-$cond .= $date_cond('posting_date');
+$w=[];$p=[];$t='';
+if ($category) { $w[] = "category = ?"; $t.='s'; $p[]=$category; }
+$build_date_cond('posting_date', $t, $p, $w);
 $sql = "SELECT COUNT(*) total,
-               SUM(availability='available') available,
-               SUM(availability='busy') busy,
-               SUM(availability='unavailable') unavailable,
-               SUM(DATE(posting_date)=CURDATE()) today,
-               SUM(DATE(posting_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) week
-        FROM services $cond";
-if ($res = $conn->query($sql)) {
-    $row = $res->fetch_assoc();
-    // busy may be null if column doesn't exist; keep default 0
-    foreach ($services as $k => $v) { if (isset($row[$k])) $services[$k] = (int)$row[$k]; }
-    $res->free();
-}
+           SUM(availability='available') available,
+           SUM(availability='busy') busy,
+           SUM(availability='unavailable') unavailable,
+           SUM(DATE(posting_date)=CURDATE()) today,
+           SUM(DATE(posting_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) week
+    FROM services ".(count($w)?('WHERE '.implode(' AND ',$w)):'');
+$row = $prepare_and_fetch_assoc($sql, $t, $p);
+if ($row) { foreach ($services as $k => $v) { if (isset($row[$k])) $services[$k] = (int)$row[$k]; } }
 
 // Requests statistics
 $requests = ['total'=>0,'pending'=>0,'approved'=>0,'rejected'=>0,'completed'=>0,'today'=>0,'week'=>0];
-$cond = 'WHERE 1=1';
-$cond .= $date_cond('request_date');
+$w=[];$p=[];$t='';
+$build_date_cond('request_date', $t, $p, $w);
 $sql = "SELECT COUNT(*) total,
-               SUM(status='pending') pending,
-               SUM(status='approved') approved,
-               SUM(status='rejected') rejected,
-               SUM(status='completed') completed,
-               SUM(DATE(request_date)=CURDATE()) today,
-               SUM(DATE(request_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) week
-        FROM requests $cond";
-if ($res = $conn->query($sql)) {
-    $row = $res->fetch_assoc();
-    foreach ($requests as $k => $v) { if (isset($row[$k])) $requests[$k] = (int)$row[$k]; }
-    $res->free();
-}
+           SUM(status='pending') pending,
+           SUM(status='approved') approved,
+           SUM(status='rejected') rejected,
+           SUM(status='completed') completed,
+           SUM(DATE(request_date)=CURDATE()) today,
+           SUM(DATE(request_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) week
+    FROM requests ".(count($w)?('WHERE '.implode(' AND ',$w)):'');
+$row = $prepare_and_fetch_assoc($sql, $t, $p);
+if ($row) { foreach ($requests as $k => $v) { if (isset($row[$k])) $requests[$k] = (int)$row[$k]; } }
 
 // Reviews statistics
 $reviews = ['total'=>0,'avg'=>0,'week'=>0,'one'=>0,'two'=>0,'three'=>0,'four'=>0,'five'=>0];
-$cond = 'WHERE 1=1';
-$cond .= $date_cond('review_date');
+$w=[];$p=[];$t='';
+$build_date_cond('review_date', $t, $p, $w);
 $sql = "SELECT COUNT(*) total,
                COALESCE(AVG(rating),0) avg,
                SUM(DATE(review_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) week,
@@ -222,38 +231,33 @@ $sql = "SELECT COUNT(*) total,
                SUM(rating=3) three,
                SUM(rating=4) four,
                SUM(rating=5) five
-        FROM reviews $cond";
-if ($res = $conn->query($sql)) {
-    $row = $res->fetch_assoc();
-    if ($row) {
-        $reviews['total'] = (int)$row['total'];
-        $reviews['avg'] = (float)$row['avg'];
-        $reviews['week'] = (int)$row['week'];
-        $reviews['one'] = (int)$row['one'];
-        $reviews['two'] = (int)$row['two'];
-        $reviews['three'] = (int)$row['three'];
-        $reviews['four'] = (int)$row['four'];
-        $reviews['five'] = (int)$row['five'];
-    }
-    $res->free();
+        FROM reviews ".(count($w)?('WHERE '.implode(' AND ',$w)):'');
+$row = $prepare_and_fetch_assoc($sql, $t, $p);
+if ($row) {
+    $reviews['total'] = (int)$row['total'];
+    $reviews['avg'] = (float)$row['avg'];
+    $reviews['week'] = (int)$row['week'];
+    $reviews['one'] = (int)$row['one'];
+    $reviews['two'] = (int)$row['two'];
+    $reviews['three'] = (int)$row['three'];
+    $reviews['four'] = (int)$row['four'];
+    $reviews['five'] = (int)$row['five'];
 }
 
 // Messages statistics
 $messages = ['total'=>0,'unread'=>0,'today'=>0,'week'=>0];
-$cond = 'WHERE 1=1';
-$cond .= $date_cond('sent_date');
+$w=[];$p=[];$t='';
+$build_date_cond('sent_date', $t, $p, $w);
 $sql = "SELECT COUNT(*) total,
-               SUM(is_read=0) unread,
-               SUM(DATE(sent_date)=CURDATE()) today,
-               SUM(DATE(sent_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) week
-        FROM messages $cond";
-if ($res = $conn->query($sql)) {
-    $row = $res->fetch_assoc();
-    foreach ($messages as $k => $v) { if (isset($row[$k])) $messages[$k] = (int)$row[$k]; }
-    $res->free();
-}
+           SUM(is_read=0) unread,
+           SUM(DATE(sent_date)=CURDATE()) today,
+           SUM(DATE(sent_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)) week
+    FROM messages ".(count($w)?('WHERE '.implode(' AND ',$w)):'');
+$row = $prepare_and_fetch_assoc($sql, $t, $p);
+if ($row) { foreach ($messages as $k => $v) { if (isset($row[$k])) $messages[$k] = (int)$row[$k]; } }
 
 // Popular categories
+// Static category aggregates
 $item_categories = [];
 if ($res = $conn->query("SELECT category, COUNT(*) cnt FROM items WHERE category IS NOT NULL AND category <> '' GROUP BY category ORDER BY cnt DESC LIMIT 10")) {
     while ($row = $res->fetch_assoc()) { $item_categories[] = $row; }
@@ -285,20 +289,49 @@ if ($res = $conn->query($sql)) {
 
 // Recent activity (last 7 days)
 $recent = [];
-$u_cond = "WHERE DATE(registration_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
-if ($role) { $u_cond .= " AND role='".$conn->real_escape_string($role)."'"; }
-$i_cond = "WHERE DATE(posting_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
-if ($category) { $i_cond .= " AND category='".$conn->real_escape_string($category)."'"; }
-$s_cond = $i_cond;
-$r_cond = "WHERE DATE(request_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
-$sql = "SELECT t,a,d FROM (SELECT 'user' AS t, username AS a, registration_date AS d FROM users $u_cond ORDER BY registration_date DESC LIMIT 10) u ";
-$sql .= "UNION ALL SELECT t,a,d FROM (SELECT 'item' AS t, title AS a, posting_date AS d FROM items $i_cond ORDER BY posting_date DESC LIMIT 10) i ";
-$sql .= "UNION ALL SELECT t,a,d FROM (SELECT 'service' AS t, title AS a, posting_date AS d FROM services $s_cond ORDER BY posting_date DESC LIMIT 10) s ";
-$sql .= "UNION ALL SELECT t,a,d FROM (SELECT 'request' AS t, CAST(request_id AS CHAR) AS a, request_date AS d FROM requests $r_cond ORDER BY request_date DESC LIMIT 10) r ";
-$sql .= "ORDER BY d DESC LIMIT 20";
-if ($res = $conn->query($sql)) {
-    while ($row = $res->fetch_assoc()) { $recent[] = $row; }
-    $res->free();
+// Keep recent activity via a prepared statement with optional role/category filters
+$sql = "SELECT t,a,d FROM (
+            SELECT 'user' AS t, username AS a, registration_date AS d
+            FROM users
+            WHERE DATE(registration_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)".
+            ($role ? " AND role = ?" : "") .
+            " ORDER BY registration_date DESC LIMIT 10
+        ) u
+        UNION ALL
+        SELECT t,a,d FROM (
+            SELECT 'item' AS t, title AS a, posting_date AS d
+            FROM items
+            WHERE DATE(posting_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)".
+            ($category ? " AND category = ?" : "") .
+            " ORDER BY posting_date DESC LIMIT 10
+        ) i
+        UNION ALL
+        SELECT t,a,d FROM (
+            SELECT 'service' AS t, title AS a, posting_date AS d
+            FROM services
+            WHERE DATE(posting_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)".
+            ($category ? " AND category = ?" : "") .
+            " ORDER BY posting_date DESC LIMIT 10
+        ) s
+        UNION ALL
+        SELECT t,a,d FROM (
+            SELECT 'request' AS t, CAST(request_id AS CHAR) AS a, request_date AS d
+            FROM requests
+            WHERE DATE(request_date)>=DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            ORDER BY request_date DESC LIMIT 10
+        ) r
+        ORDER BY d DESC LIMIT 20";
+$types=''; $params=[];
+if ($role) { $types.='s'; $params[]=$role; }
+if ($category) { $types.='s'; $params[]=$category; }
+if ($category) { $types.='s'; $params[]=$category; }
+if ($stmt = $conn->prepare($sql)) {
+    if ($types !== '') { $stmt->bind_param($types, ...$params); }
+    if ($stmt->execute() && ($res = $stmt->get_result())) {
+        while ($row = $res->fetch_assoc()) { $recent[] = $row; }
+        $res->free();
+    }
+    $stmt->close();
 }
 ?>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">

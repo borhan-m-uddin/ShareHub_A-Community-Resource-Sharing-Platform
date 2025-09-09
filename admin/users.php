@@ -30,8 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Don't let the last admin demote self easily; but we'll allow if there are other admins
                 if ($user_id === $self_id && $new_role !== 'admin') {
                     // Count other admins
-                    $res = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND user_id <> " . (int)$self_id);
-                    $row = $res ? $res->fetch_assoc() : ['c' => 0];
+                    $row = ['c'=>0];
+                    if ($st = $conn->prepare("SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND user_id <> ?")) {
+                        $st->bind_param('i', $self_id);
+                        if ($st->execute()) { $r = $st->get_result(); if ($r) { $row = $r->fetch_assoc() ?: ['c'=>0]; $r->free(); } }
+                        $st->close();
+                    }
                     if ((int)$row['c'] === 0) {
                         $errors[] = 'You are the only admin. Create another admin before changing your role.';
                     }

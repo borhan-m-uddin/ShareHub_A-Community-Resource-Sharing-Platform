@@ -1,7 +1,25 @@
 <?php
-// bootstrap.php - central initialization: start session safely, load config, and helpers
-// Start session only if not started and headers are not sent
+// bootstrap.php - central initialization: session, config, headers, helpers
+
+// Apply secure session cookie settings before session_start
 if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+    // Harden session behavior
+    @ini_set('session.use_strict_mode', '1');
+    @ini_set('session.use_only_cookies', '1');
+    @ini_set('session.cookie_httponly', '1');
+    // Compute HTTPS status
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443);
+    $cookieParams = [
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => $isHttps,           // secure cookie only on HTTPS
+        'httponly' => true,
+        'samesite' => 'Strict',
+    ];
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params($cookieParams);
+    }
     session_start();
 }
 
@@ -84,6 +102,17 @@ function flash_get($key) {
 
 ?>
 <?php
+// -------- Security Headers (CSP, Clickjacking, MIME sniffing, Referrer, Permissions) --------
+if (!headers_sent()) {
+    // Conservative CSP suitable for this app. Adjust if adding external assets.
+    $csp = "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'";
+    header('Content-Security-Policy: ' . $csp);
+    header('X-Frame-Options: DENY');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: geolocation=(), camera=(), microphone=()');
+}
+
 // Lightweight email helper: try mail(); if it fails, log to storage/mail.log for debugging
 // CSRF helpers
 if (!function_exists('csrf_token')) {
@@ -304,6 +333,11 @@ if (!function_exists('send_email')) {
 }
 
 // -------- Path & layout helpers ---------
+if (!function_exists('e')) {
+    // HTML-escape helper (quotes and UTF-8 safe)
+    function e($value): string { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
+}
+
 if (!function_exists('path_prefix')) {
     function path_prefix(): string {
         // Compute how many levels deep the current script is relative to ROOT
