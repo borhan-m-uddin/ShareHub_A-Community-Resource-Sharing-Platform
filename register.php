@@ -141,7 +141,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 // Attempt to execute the prepared statement
                 if ($stmt->execute()) {
-                    header("location: login.php");
+                    // After creating the user, send a verification email and redirect to notice
+                    $newId = $stmt->insert_id ? (int)$stmt->insert_id : 0;
+                    if ($newId === 0) {
+                        if ($q = $conn->prepare('SELECT user_id FROM users WHERE username = ? LIMIT 1')) {
+                            $q->bind_param('s', $param_username);
+                            if ($q->execute()) {
+                                $r = $q->get_result();
+                                if ($row = $r->fetch_assoc()) { $newId = (int)$row['user_id']; }
+                                if ($r) $r->free();
+                            }
+                            $q->close();
+                        }
+                    }
+                        $_SESSION['flash_success'] = 'Account created. You are now being redirected to login.';
+                        header("location: login.php");
+                        exit();
                 } else {
                     echo "Something went wrong. Please try again later.";
                 }

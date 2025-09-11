@@ -139,6 +139,7 @@ foreach($all_services as $service) {
         </div>
 
         <?php if (!empty($all_services)): ?>
+            <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>
@@ -188,6 +189,7 @@ foreach($all_services as $service) {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
 
             <?php if (!empty($categories)): ?>
                 <div style="margin-top:16px;">

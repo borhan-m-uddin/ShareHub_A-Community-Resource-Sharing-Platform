@@ -10,7 +10,8 @@
                 <img src="<?php echo asset_url('assets/brand/logo-text.svg'); ?>" alt="ShareHub logo" class="site-logo" />
             </a>
         </div>
-        <nav class="site-nav">
+    <button class="nav-toggle" aria-expanded="false" aria-controls="siteNav" aria-label="Open menu" title="Menu">☰</button>
+        <nav class="site-nav" id="siteNav">
             <?php $homeHref = !empty($_SESSION['loggedin']) ? site_href('dashboard.php') : site_href('index.php'); ?>
             <a href="<?php echo $homeHref; ?>">Home</a>
             <?php if (!empty($_SESSION['loggedin'])): ?>
@@ -29,6 +30,13 @@
 </header>
 <main class="main-content">
 <!-- shared header end -->
+<?php if (function_exists('db_connected') && !db_connected()): ?>
+<div class="wrapper" style="border:1px solid #fecaca;background:#fff1f2;color:#991b1b;">
+    <div class="alert alert-danger" style="margin:0;">
+        Database connection is offline. Pages may be limited until the DB is available.
+    </div>
+</div>
+<?php endif; ?>
 <script>
 // Theme toggle: persists in localStorage and sets html[data-theme]
 (function(){
@@ -69,6 +77,36 @@
     if(ro){
         var header = document.querySelector('.site-header');
         if(header) ro.observe(header);
+    }
+})();
+// Mobile nav toggle
+(function(){
+    function qs(sel){ return document.querySelector(sel); }
+    var btn = qs('.nav-toggle');
+    var nav = qs('#siteNav');
+    if(!btn || !nav) return;
+    function setExpanded(exp){ btn.setAttribute('aria-expanded', exp ? 'true' : 'false'); }
+    btn.addEventListener('click', function(){
+        var open = nav.classList.toggle('open');
+        setExpanded(open);
+    });
+    // Close menu on link click (better UX on mobile)
+    nav.addEventListener('click', function(ev){
+        var t = ev.target;
+        if(t && t.tagName === 'A' && nav.classList.contains('open')){
+            nav.classList.remove('open');
+            setExpanded(false);
+        }
+    });
+})();
+// Ensure viewport meta exists for responsive scaling on pages missing <meta name="viewport">
+(function(){
+    var m = document.querySelector('meta[name="viewport"]');
+    if(!m){
+        m = document.createElement('meta');
+        m.name = 'viewport';
+        m.content = 'width=device-width, initial-scale=1';
+        document.head && document.head.appendChild(m);
     }
 })();
 </script>

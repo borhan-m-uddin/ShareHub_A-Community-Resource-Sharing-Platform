@@ -88,6 +88,7 @@ if($st=$conn->prepare($sqlc)){ if($types!==''){ $st->bind_param($types,...$param
     <?php foreach($notices as $n): ?><div class="alert alert-success"><?php echo htmlspecialchars($n); ?></div><?php endforeach; ?>
 
     <?php if (!empty($reviews)): ?>
+        <div class="table-wrap">
         <table class="table">
             <thead>
                 <tr><th>ID</th><th>Rating</th><th>Reviewer</th><th>Reviewed User</th><th>Comment</th><th>Date</th><th>Admin</th></tr>
@@ -112,6 +113,7 @@ if($st=$conn->prepare($sqlc)){ if($types!==''){ $st->bind_param($types,...$param
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     <?php render_pagination($page, $perPage, count($reviews), $total); ?>
     <?php else: ?>
         <div class="empty-state"><h3>No reviews found</h3></div>

@@ -46,7 +46,9 @@ $conn->close();
         </p>
 
         <?php if (!empty($requests)): ?>
+            <div class="table-wrap">
             <table class="request-table">
+                <thead>
                     <tr>
                         <th>Resource</th>
                         <th>Type</th>
@@ -79,6 +81,7 @@ $conn->close();
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
         <?php else: ?>
         <div class="alert alert-info">
                 <h4>📭 No Requests Yet</h4>

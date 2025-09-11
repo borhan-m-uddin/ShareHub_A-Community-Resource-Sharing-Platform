@@ -179,6 +179,7 @@ $total=0; $sqlc="SELECT COUNT(*) c FROM users $where"; if($st=$conn->prepare($sq
     <?php foreach($notices as $n): ?><div class="alert alert-success"><?php echo htmlspecialchars($n); ?></div><?php endforeach; ?>
 
     <?php if (!empty($users)): ?>
+        <div class="table-wrap">
         <table class="table">
             <thead>
                 <tr>
@@ -231,6 +232,7 @@ $total=0; $sqlc="SELECT COUNT(*) c FROM users $where"; if($st=$conn->prepare($sq
             <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     <?php render_pagination($page, $perPage, count($users), $total); ?>
     <?php else: ?>
         <div class="empty-state"><h3>No users found</h3></div>

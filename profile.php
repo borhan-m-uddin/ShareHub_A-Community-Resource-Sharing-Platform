@@ -7,6 +7,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
 
 $username = $email = $first_name = $last_name = $phone = $address = "";
 $username_err = $email_err = $first_name_err = $last_name_err = $phone_err = $address_err = "";
+// Constraints aligned with typical DB schemas
+$MAX_USERNAME = 32; $MIN_USERNAME = 3;
+$MAX_EMAIL = 254;
+$MAX_NAME = 50; $MIN_NAME = 2;
+$MAX_PHONE = 30; $MIN_PHONE = 7;
+$MAX_ADDRESS = 500; $MIN_ADDRESS = 0; // address optional
 
 // Fetch user data
 $sql = "SELECT username, email, first_name, last_name, phone, address FROM users WHERE user_id = ?";
@@ -35,78 +41,94 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         exit;
     }
 
-    // Validate username
-    if(empty(trim($_POST["username"]))){
+    // Validate username (required, 3-32, letters/numbers/_/.)
+    $candidate = trim((string)($_POST['username'] ?? ''));
+    if ($candidate === '') {
         $username_err = "Please enter a username.";
-    } else{
-        if (!preg_match('/^[A-Za-z0-9]+$/', $_POST['username'])) {
-            $username_err = "Username must contain only letters and numbers.";
-        }
-        // Check if username is already taken by another user
-        $sql = "SELECT user_id FROM users WHERE username = ? AND user_id != ?";
-        if($stmt = $conn->prepare($sql)){
-            $stmt->bind_param("si", $param_username, $_SESSION["user_id"]);
-            $param_username = trim($_POST["username"]);
-            if($stmt->execute()){
+    } elseif (mb_strlen($candidate) < $MIN_USERNAME || mb_strlen($candidate) > $MAX_USERNAME) {
+        $username_err = "Username must be {$MIN_USERNAME}-{$MAX_USERNAME} characters.";
+    } elseif (!preg_match('/^[A-Za-z0-9_.]+$/', $candidate)) {
+        $username_err = "Username may include letters, numbers, _ and . only.";
+    } else {
+        // Case-insensitive uniqueness
+        $sql = "SELECT user_id FROM users WHERE LOWER(username) = LOWER(?) AND user_id != ?";
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->bind_param("si", $candidate, $_SESSION["user_id"]);
+            if ($stmt->execute()) {
                 $stmt->store_result();
-                if($stmt->num_rows == 1){
+                if ($stmt->num_rows >= 1) {
                     $username_err = "This username is already taken.";
-                } else{
-                    $username = trim($_POST["username"]);
+                } else {
+                    $username = $candidate;
                 }
             }
             $stmt->close();
         }
     }
 
-    // Validate email
-    if(empty(trim($_POST["email"]))){
+    // Validate email (required, format, max length, uniqueness case-insensitive)
+    $emailCand = strtolower(trim((string)($_POST['email'] ?? '')));
+    if ($emailCand === '') {
         $email_err = "Please enter an email.";
-    } else{
-        if (!filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL)) {
-            $email_err = "Please enter a valid email address.";
-        }
-        // Check if email is already registered by another user
-        $sql = "SELECT user_id FROM users WHERE email = ? AND user_id != ?";
-        if($stmt = $conn->prepare($sql)){
-            $stmt->bind_param("si", $param_email, $_SESSION["user_id"]);
-            $param_email = trim($_POST["email"]);
-            if($stmt->execute()){
+    } elseif (mb_strlen($emailCand) > $MAX_EMAIL || !filter_var($emailCand, FILTER_VALIDATE_EMAIL)) {
+        $email_err = "Please enter a valid email address.";
+    } else {
+        $sql = "SELECT user_id FROM users WHERE LOWER(email) = LOWER(?) AND user_id != ?";
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->bind_param("si", $emailCand, $_SESSION["user_id"]);
+            if ($stmt->execute()) {
                 $stmt->store_result();
-                if($stmt->num_rows == 1){
+                if ($stmt->num_rows >= 1) {
                     $email_err = "This email is already registered.";
-                } else{
-                    $email = trim($_POST["email"]);
+                } else {
+                    $email = $emailCand;
                 }
             }
             $stmt->close();
         }
     }
 
-    // Validate first name
-    if(empty(trim($_POST["first_name"]))){
+    // Validate first name (required, 2-50 letters, spaces, '-', ")
+    $fnCand = trim((string)($_POST['first_name'] ?? ''));
+    if ($fnCand === '') {
         $first_name_err = "Please enter your first name.";
-    } else{
-        $first_name = trim($_POST["first_name"]);
+    } elseif (mb_strlen($fnCand) < $MIN_NAME || mb_strlen($fnCand) > $MAX_NAME || !preg_match('/^[\p{L} \-\']+$/u', $fnCand)) {
+        $first_name_err = "First name must be {$MIN_NAME}-{$MAX_NAME} letters (spaces, - and ' allowed).";
+    } else {
+        // Collapse multiple spaces
+        $first_name = preg_replace('/\s{2,}/', ' ', $fnCand);
     }
 
-    // Validate last name
-    if(empty(trim($_POST["last_name"]))){
+    // Validate last name (required, 2-50 letters)
+    $lnCand = trim((string)($_POST['last_name'] ?? ''));
+    if ($lnCand === '') {
         $last_name_err = "Please enter your last name.";
-    } else{
-        $last_name = trim($_POST["last_name"]);
+    } elseif (mb_strlen($lnCand) < $MIN_NAME || mb_strlen($lnCand) > $MAX_NAME || !preg_match('/^[\p{L} \-\']+$/u', $lnCand)) {
+        $last_name_err = "Last name must be {$MIN_NAME}-{$MAX_NAME} letters (spaces, - and ' allowed).";
+    } else {
+        $last_name = preg_replace('/\s{2,}/', ' ', $lnCand);
     }
 
-    // Validate phone (optional)
-    $phone = trim($_POST["phone"]);
-    if ($phone !== '' && mb_strlen($phone) > 30) { $phone_err = "Phone must be 30 characters or less."; }
+    // Validate phone (optional; allow +, digits, spaces, () and -)
+    $phoneCand = trim((string)($_POST['phone'] ?? ''));
+    if ($phoneCand !== '') {
+        if (mb_strlen($phoneCand) > $MAX_PHONE || !preg_match('/^\+?[0-9\s().\-]{7,}$/', $phoneCand)) {
+            $phone_err = "Please enter a valid phone number.";
+        } else {
+            $phone = $phoneCand;
+        }
+    } else { $phone = ''; }
 
     // Validate address (optional)
-    $address = trim($_POST["address"]);
-    if ($address !== '' && mb_strlen($address) > 500) { $address_err = "Address must be 500 characters or less."; }
+    $addrCand = trim((string)($_POST['address'] ?? ''));
+    if ($addrCand !== '' && (mb_strlen($addrCand) < $MIN_ADDRESS || mb_strlen($addrCand) > $MAX_ADDRESS)) {
+        $address_err = "Address must be {$MIN_ADDRESS}-{$MAX_ADDRESS} characters.";
+    } else {
+        $address = $addrCand;
+    }
 
     // Check input errors before updating in database
-    if(empty($username_err) && empty($email_err) && empty($first_name_err) && empty($last_name_err)){
+    if(empty($username_err) && empty($email_err) && empty($first_name_err) && empty($last_name_err) && empty($phone_err) && empty($address_err)){
         $sql = "UPDATE users SET username = ?, email = ?, first_name = ?, last_name = ?, phone = ?, address = ? WHERE user_id = ?";
         if($stmt = $conn->prepare($sql)){
             // Prepare parameter variables and ensure we bind variables (not expressions)
@@ -148,37 +170,40 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <div class="wrapper">
         <h2>Manage Your Profile</h2>
         <p>Update your account information below.</p>
-        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+        <?php if($username_err || $email_err || $first_name_err || $last_name_err || $phone_err || $address_err): ?>
+            <div class="alert alert-danger">Please fix the errors below.</div>
+        <?php endif; ?>
+    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"], ENT_QUOTES, 'UTF-8'); ?>" method="post">
             <?php echo csrf_field(); ?>
             <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
                 <label>Username</label>
-                <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($username ?? ''); ?>">
-                <span class="help-block"><?php echo $username_err; ?></span>
+                <input type="text" name="username" class="form-control" required minlength="<?php echo $MIN_USERNAME; ?>" maxlength="<?php echo $MAX_USERNAME; ?>" pattern="[A-Za-z0-9_.]+" value="<?php echo htmlspecialchars($username ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                <span class="help-block"><?php echo htmlspecialchars($username_err, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
             <div class="form-group <?php echo (!empty($email_err)) ? 'has-error' : ''; ?>">
                 <label>Email</label>
-                <input type="email" name="email" class="form-control" value="<?php echo htmlspecialchars($email ?? ''); ?>">
-                <span class="help-block"><?php echo $email_err; ?></span>
+                <input type="email" name="email" class="form-control" required maxlength="<?php echo $MAX_EMAIL; ?>" value="<?php echo htmlspecialchars($email ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                <span class="help-block"><?php echo htmlspecialchars($email_err, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
             <div class="form-group <?php echo (!empty($first_name_err)) ? 'has-error' : ''; ?>">
                 <label>First Name</label>
-                <input type="text" name="first_name" class="form-control" value="<?php echo htmlspecialchars($first_name ?? ''); ?>">
-                <span class="help-block"><?php echo $first_name_err; ?></span>
+                <input type="text" name="first_name" class="form-control" required minlength="<?php echo $MIN_NAME; ?>" maxlength="<?php echo $MAX_NAME; ?>" value="<?php echo htmlspecialchars($first_name ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                <span class="help-block"><?php echo htmlspecialchars($first_name_err, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
             <div class="form-group <?php echo (!empty($last_name_err)) ? 'has-error' : ''; ?>">
                 <label>Last Name</label>
-                <input type="text" name="last_name" class="form-control" value="<?php echo htmlspecialchars($last_name ?? ''); ?>">
-                <span class="help-block"><?php echo $last_name_err; ?></span>
+                <input type="text" name="last_name" class="form-control" required minlength="<?php echo $MIN_NAME; ?>" maxlength="<?php echo $MAX_NAME; ?>" value="<?php echo htmlspecialchars($last_name ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                <span class="help-block"><?php echo htmlspecialchars($last_name_err, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
             <div class="form-group <?php echo (!empty($phone_err)) ? 'has-error' : ''; ?>">
                 <label>Phone</label>
-                <input type="text" name="phone" class="form-control" value="<?php echo htmlspecialchars($phone ?? ''); ?>" placeholder="e.g., (555) 123-4567">
-                <span class="help-block"><?php echo $phone_err; ?></span>
+                <input type="text" name="phone" class="form-control" maxlength="<?php echo $MAX_PHONE; ?>" pattern="^\+?[0-9\s().\-]{7,}$" value="<?php echo htmlspecialchars($phone ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="e.g., +1 555 123 4567">
+                <span class="help-block"><?php echo htmlspecialchars($phone_err, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
             <div class="form-group <?php echo (!empty($address_err)) ? 'has-error' : ''; ?>">
                 <label>Address</label>
-                <textarea name="address" class="form-control" placeholder="Your address"><?php echo htmlspecialchars($address ?? ''); ?></textarea>
-                <span class="help-block"><?php echo $address_err; ?></span>
+                <textarea name="address" class="form-control" maxlength="<?php echo $MAX_ADDRESS; ?>" placeholder="Your address"><?php echo htmlspecialchars($address ?? '', ENT_QUOTES, 'UTF-8'); ?></textarea>
+                <span class="help-block"><?php echo htmlspecialchars($address_err, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
             <div class="form-group">
                 <input type="submit" class="btn btn-primary" value="Update Profile">

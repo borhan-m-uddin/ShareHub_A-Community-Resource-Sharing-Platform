@@ -2,6 +2,7 @@
 require_once __DIR__ . '/bootstrap.php';
 require_login();
 if (($_SESSION['role'] ?? '') !== 'seeker') { header('Location: ' . site_href('login.php')); exit; }
+// email verification no longer required
 
 $service_id = $_GET["service_id"] ?? null;
 $service = null;

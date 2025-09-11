@@ -84,6 +84,10 @@ html[data-theme='light'] body .services-table tr:nth-child(even) td,
 html[data-theme='light'] body .reviews-table tr:nth-child(even) td,
 html[data-theme='light'] body .messages-table tr:nth-child(even) td,
 html[data-theme='light'] body .users-table tr:nth-child(even) td { background:#fbfcfe !important; }
+html[data-theme='light'] p { color: var(--text); }
+html[data-theme='light'] span { color: #171818; }
+html[data-theme='light'] span { background-color: var(--primary); }
+
 /*
     Global Theme Refresh
     - Modern palette via CSS variables
@@ -569,5 +573,42 @@ html[data-theme='dark'] .rating-stars { --star-empty: #475569; }
 
 /* Screen-reader only utility */
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,1px,1px); white-space:nowrap; border:0; }
+
+
+
+/* ---- Responsive enhancements ---- */
+/* Make media scale nicely */
+img, video { max-width: 100%; height: auto; }
+
+/* Mobile navigation */
+.nav-toggle { display:none; background: transparent; border: 2px solid var(--border); color: var(--text); border-radius: 10px; padding: 8px 10px; font-size: 1rem; cursor: pointer; }
+.nav-toggle:focus { outline: 2px solid rgba(37,99,235,0.3); }
+
+@media (max-width: 900px){
+    .site-header .container { flex-wrap: wrap; gap: 8px; }
+    .site-logo { width: 210px; max-width: 56vw; }
+    .nav-toggle { display: inline-block; }
+    .site-nav { width: 100%; order: 3; display: none; flex-direction: column; gap: 8px; padding: 8px 0; }
+    .site-nav.open { display: flex; }
+    .site-nav a { margin: 0; padding: 10px 12px; }
+    .site-header #themeToggle { align-self: flex-start; margin-left: 0; }
+}
+
+/* Table horizontal scroll on small screens */
+.table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table, .request-table, .services-table, .reviews-table, .messages-table, .users-table { min-width: 640px; }
+
+/* Modal sizing on small screens */
+@media (max-width: 640px){
+    .modal .modal-card { margin: 10% 12px; width: auto; }
+}
+
+/* Tighter layout for small devices */
+@media (max-width:800px){
+    .wrapper { margin:12px; padding:16px; }
+    .dashboard-links a { flex:1 1 100%; }
+    .request-table th, .request-table td { font-size:0.92rem; padding:8px; }
+    .grid-2 { grid-template-columns: 1fr; }
+}
 
 

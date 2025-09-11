@@ -30,57 +30,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 // Handle optional single image upload
                 if (isset($_FILES['image']) && is_array($_FILES['image']) && ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-                    $err = (int)$_FILES['image']['error'];
-                    if ($err === UPLOAD_ERR_OK) {
-                        $tmp = $_FILES['image']['tmp_name'];
-                        $size = (int)($_FILES['image']['size'] ?? 0);
-                        // Validate MIME with fallbacks and JPEG variants
-                        $mime = null;
-                        if (function_exists('finfo_open')) {
-                            $fi = finfo_open(FILEINFO_MIME_TYPE);
-                            if ($fi) { $mime = finfo_file($fi, $tmp); finfo_close($fi); }
-                        }
-                        if (!$mime && function_exists('getimagesize')) {
-                            $gi = @getimagesize($tmp);
-                            if (is_array($gi) && !empty($gi['mime'])) { $mime = $gi['mime']; }
-                        }
-                        if (!$mime && isset($_FILES['image']['type'])) { $mime = $_FILES['image']['type']; }
-                        $mime = $mime ? strtolower($mime) : null;
-                        $allowed = [
-                            'image/jpeg' => 'jpg',
-                            'image/jpg'  => 'jpg',
-                            'image/pjpeg'=> 'jpg',
-                            'image/png'  => 'png',
-                            'image/gif'  => 'gif',
-                            'image/webp' => 'webp',
-                        ];
-                        if ($mime && isset($allowed[$mime]) && $size <= 2*1024*1024) {
-                            $ext = $allowed[$mime];
-                            $dir = __DIR__ . '/uploads/items';
-                            if (!is_dir($dir)) { @mkdir($dir, 0777, true); }
-                            try { $name = bin2hex(random_bytes(16)) . '.' . $ext; } catch (Exception $e) { $name = uniqid('', true) . '.' . $ext; }
-                            $destAbs = $dir . '/' . $name;
-                            $destRel = 'uploads/items/' . $name;
-                            if (move_uploaded_file($tmp, $destAbs)) {
-                                $image_url = $destRel;
-                            } else {
-                                $error = "Error saving uploaded image.";
-                            }
-                        } else {
-                            $error = "Invalid image (type or size). Allowed: JPG/PNG/GIF/WEBP up to 2MB.";
-                        }
-                    } else {
-                        $errMap = [
-                            UPLOAD_ERR_INI_SIZE => 'The file exceeds server limit (upload_max_filesize).',
-                            UPLOAD_ERR_FORM_SIZE => 'The file exceeds form limit (MAX_FILE_SIZE).',
-                            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded.',
-                            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
-                            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
-                            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
-                            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the upload.'
-                        ];
-                        $error = isset($errMap[$err]) ? $errMap[$err] : ("Image upload error (code $err).");
-                    }
+                    $res = upload_image_secure($_FILES['image'], 'uploads/items', 2_000_000, 1600, 1200);
+                    if ($res['ok']) { $image_url = $res['pathRel']; } else { $error = $res['error']; }
                 }
 
                 if (!empty($title) && !empty($description) && !empty($pickup_location) && empty($error)) {
@@ -114,56 +65,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 // Optional: process new image upload
                 if (!$remove_image && isset($_FILES['edit_image']) && is_array($_FILES['edit_image']) && ($_FILES['edit_image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-                    $err = (int)$_FILES['edit_image']['error'];
-                    if ($err === UPLOAD_ERR_OK) {
-                        $tmp = $_FILES['edit_image']['tmp_name'];
-                        $size = (int)($_FILES['edit_image']['size'] ?? 0);
-                        $mime = null;
-                        if (function_exists('finfo_open')) {
-                            $fi = finfo_open(FILEINFO_MIME_TYPE);
-                            if ($fi) { $mime = finfo_file($fi, $tmp); finfo_close($fi); }
-                        }
-                        if (!$mime && function_exists('getimagesize')) {
-                            $gi = @getimagesize($tmp);
-                            if (is_array($gi) && !empty($gi['mime'])) { $mime = $gi['mime']; }
-                        }
-                        if (!$mime && isset($_FILES['edit_image']['type'])) { $mime = $_FILES['edit_image']['type']; }
-                        $mime = $mime ? strtolower($mime) : null;
-                        $allowed = [
-                            'image/jpeg' => 'jpg',
-                            'image/jpg'  => 'jpg',
-                            'image/pjpeg'=> 'jpg',
-                            'image/png'  => 'png',
-                            'image/gif'  => 'gif',
-                            'image/webp' => 'webp',
-                        ];
-                        if ($mime && isset($allowed[$mime]) && $size <= 2*1024*1024) {
-                            $ext = $allowed[$mime];
-                            $dir = __DIR__ . '/uploads/items';
-                            if (!is_dir($dir)) { @mkdir($dir, 0777, true); }
-                            try { $name = bin2hex(random_bytes(16)) . '.' . $ext; } catch (Exception $e) { $name = uniqid('', true) . '.' . $ext; }
-                            $destAbs = $dir . '/' . $name;
-                            $destRel = 'uploads/items/' . $name;
-                            if (move_uploaded_file($tmp, $destAbs)) {
-                                $new_image_url = $destRel;
-                            } else {
-                                $error = "Error saving uploaded image.";
-                            }
-                        } else {
-                            $error = "Invalid image (type or size). Allowed: JPG/PNG/GIF/WEBP up to 2MB.";
-                        }
-                    } else {
-                        $errMap = [
-                            UPLOAD_ERR_INI_SIZE => 'The file exceeds server limit (upload_max_filesize).',
-                            UPLOAD_ERR_FORM_SIZE => 'The file exceeds form limit (MAX_FILE_SIZE).',
-                            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded.',
-                            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
-                            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
-                            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
-                            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the upload.'
-                        ];
-                        $error = isset($errMap[$err]) ? $errMap[$err] : ("Image upload error (code $err).");
-                    }
+                    $res = upload_image_secure($_FILES['edit_image'], 'uploads/items', 2_000_000, 1600, 1200);
+                    if ($res['ok']) { $new_image_url = $res['pathRel']; } else { $error = $res['error']; }
                 }
                 
                 if (empty($error)) {

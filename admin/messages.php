@@ -63,6 +63,7 @@ if($st=$conn->prepare($sqlc)){
         <div class="muted" style="margin-bottom:8px;">Showing <?php echo count($messages); ?> of <?php echo (int)$total; ?><?php if($total>$perPage): ?> | Page <?php echo $page; ?><?php endif; ?></div>
 
         <?php if(!empty($messages)): ?>
+            <div class="table-wrap">
             <table class="table">
                 <thead><tr>
                     <th>ID</th><th>Subject</th><th>Sender</th><th>Receiver</th><th>Sent</th><th>Request</th>
@@ -80,6 +81,7 @@ if($st=$conn->prepare($sqlc)){
                 <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
             <?php render_pagination($page, $perPage, count($messages), $total); ?>
         <?php else: ?>
             <div class="empty-state"><h3>No messages found</h3></div>

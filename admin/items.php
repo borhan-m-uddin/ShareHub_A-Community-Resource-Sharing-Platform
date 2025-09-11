@@ -115,6 +115,7 @@ foreach ($all_items as $it) {
     </div>
 
     <?php if (!empty($all_items)): ?>
+    <div class="table-wrap">
     <table class="table">
             <thead>
                 <tr>
@@ -164,8 +165,9 @@ foreach ($all_items as $it) {
                         </td>
                     </tr>
                 <?php endforeach; ?>
-            </tbody>
+        </tbody>
     </table>
+    </div>
 
     <?php render_pagination($page, $perPage, count($all_items), $total); ?>
 

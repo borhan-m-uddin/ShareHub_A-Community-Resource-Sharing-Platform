@@ -92,6 +92,7 @@ $conn->close();
         <p><a href="dashboard.php" class="btn btn-default">← Back to Dashboard</a></p>
 
         <?php if (!empty($incoming_requests)): ?>
+            <div class="table-wrap">
             <table class="request-table">
                 <thead>
                     <tr>
@@ -147,6 +148,7 @@ $conn->close();
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
         <?php else: ?>
             <div class="alert-info">
                 <h4>📭 No Incoming Requests</h4>

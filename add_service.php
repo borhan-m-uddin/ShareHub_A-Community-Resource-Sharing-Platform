@@ -5,6 +5,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION[
     header("location: " . site_href('login.php'));
     exit;
 }
+// email verification no longer required
 
 $title = $description = $category = $expertise_level = $availability = $preferred_exchange = "";
 $title_err = $description_err = $category_err = $expertise_level_err = $availability_err = $preferred_exchange_err = "";

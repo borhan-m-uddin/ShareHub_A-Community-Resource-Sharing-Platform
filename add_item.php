@@ -7,6 +7,8 @@ if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || ($_SESSIO
     header("location: login.php");
     exit;
 }
+// Require verified email for posting items
+// email verification no longer required
 
 // Initialize state
 $title = $description = $category = $pickup_location = "";
@@ -54,75 +56,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Handle single image upload (stores path in image_url)
     if (isset($_FILES['image']) && is_array($_FILES['image']) && ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-        $err = (int)$_FILES['image']['error'];
-        if ($err === UPLOAD_ERR_OK) {
-            $tmp = $_FILES['image']['tmp_name'];
-
-            // Determine MIME with fallbacks
-            $mime = null;
-            if (function_exists('finfo_open')) {
-                $f = finfo_open(FILEINFO_MIME_TYPE);
-                if ($f) {
-                    $mime = finfo_file($f, $tmp);
-                    finfo_close($f);
-                }
-            }
-            if (!$mime && function_exists('getimagesize')) {
-                $gi = @getimagesize($tmp);
-                if (is_array($gi) && !empty($gi['mime'])) {
-                    $mime = $gi['mime'];
-                }
-            }
-            if (!$mime && isset($_FILES['image']['type'])) {
-                $mime = $_FILES['image']['type']; // last resort
-            }
-
-            // Accept common JPEG variants too
-            $allowed = [
-                'image/jpeg' => 'jpg',
-                'image/jpg'  => 'jpg',
-                'image/pjpeg'=> 'jpg',
-                'image/png'  => 'png',
-                'image/gif'  => 'gif',
-                'image/webp' => 'webp',
-            ];
-
-            if (!$mime || !isset($allowed[strtolower($mime)])) {
-                $image_err = "Only JPG, PNG, GIF or WEBP images are allowed.";
-            } else {
-                // Limit size to 2MB and respect PHP limits
-                $size = (int)($_FILES['image']['size'] ?? 0);
-                if ($size > 2 * 1024 * 1024) {
-                    $image_err = "Image size must be 2MB or less.";
-                } else {
-                    $ext = $allowed[strtolower($mime)];
-                    $dir = __DIR__ . '/uploads/items';
-                    if (!is_dir($dir)) {
-                        @mkdir($dir, 0777, true);
-                    }
-                    try { $name = bin2hex(random_bytes(16)) . '.' . $ext; } catch (Exception $e) { $name = uniqid('', true) . '.' . $ext; }
-                    $destAbs = $dir . '/' . $name;
-                    $destRel = 'uploads/items/' . $name; // stored in DB
-                    if (move_uploaded_file($tmp, $destAbs)) {
-                        $saved_image_url = $destRel;
-                    } else {
-                        $image_err = "Failed to save uploaded image.";
-                    }
-                }
-            }
-        } else {
-            // Map common PHP upload errors
-            $errMap = [
-                UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
-                UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive specified in the HTML form.',
-                UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded.',
-                UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
-                UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server.',
-                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk on the server.',
-                UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.'
-            ];
-            $image_err = isset($errMap[$err]) ? $errMap[$err] : ("Upload error (code $err).");
-        }
+        $res = upload_image_secure($_FILES['image'], 'uploads/items', 2_000_000, 1600, 1200);
+        if ($res['ok']) { $saved_image_url = $res['pathRel']; } else { $image_err = $res['error']; }
     }
 
     // Insert when valid

@@ -148,6 +148,7 @@ if ($stmtc = $conn->prepare($sqlCount)) {
     </div>
 
     <?php if (!empty($requests)): ?>
+    <div class="table-wrap">
     <table class="table">
         <thead><tr>
             <th>ID</th><th>Status</th><th>Type</th><th>Requester</th><th>Giver</th><th>Date</th><th>Actions</th>
@@ -195,6 +196,7 @@ if ($stmtc = $conn->prepare($sqlCount)) {
         <?php endforeach; ?>
         </tbody>
     </table>
+    </div>
     <?php render_pagination($page, $perPage, count($requests), $total); ?>
     <?php else: ?>
         <div class="empty-state"><h3>No requests found</h3></div>
