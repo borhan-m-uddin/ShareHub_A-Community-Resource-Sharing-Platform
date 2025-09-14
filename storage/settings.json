@@ -1,12 +1,15 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "site_name": "ShareHub",
   "default_theme": "light",
-  "contact_email": "borhanudiin1902@gmail.com",
+  "contact_email": "burhanuddin49945@gmail.com",
   "smtp_host": "smtp.gmail.com",
   "smtp_port": 587,
-  "smtp_user": "borhanudiin1902@gmail.com",
-  "smtp_pass": "jnil nxho qqcz lkdq",
-  "smtp_from": "borhanudiin1902@gmail.com",
+  "smtp_user": "burhanuddin49945@gmail.com",
+  "smtp_pass": "kiqmxfyyhxlurlmt",
+  "smtp_from": "burhanuddin49945@gmail.com",
   "smtp_from_name": "ShareHub",
-  "smtp_secure": "tls"
-}
+  "smtp_secure": "",   
+  "smtp_local_domain": "sharehub.local",
+  "smtp_debug": true
+} 

@@ -210,7 +210,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <a href="dashboard.php" class="btn btn-default">Cancel</a>
             </div>
         </form>
-        <p><a href="reset_password.php">Reset Your Password</a></p>
+    <p><a href="forgot_password.php">Reset Your Password</a></p>
     </div>
     </main>
 </body>

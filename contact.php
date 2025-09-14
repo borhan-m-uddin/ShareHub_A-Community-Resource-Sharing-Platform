@@ -1,12 +1,25 @@
 <?php require_once __DIR__ . '/bootstrap.php'; 
+// Prevent caching so flash messages don't persist via bfcache or caches
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 
 $success_message = null;
 $error_message = null;
 
-// Anti-spam config
-$min_submit_seconds = 3;      // Minimum time between form render and submit
-$max_per_minute = 5;          // Per-IP submissions per minute
-$max_per_hour = 20;           // Per-IP submissions per hour
+// Flash messages (one-time) from PRG redirect
+if (isset($_SESSION['flash_contact_success'])) {
+    $success_message = $_SESSION['flash_contact_success'];
+    unset($_SESSION['flash_contact_success']);
+}
+if (isset($_SESSION['flash_contact_error'])) {
+    $error_message = $_SESSION['flash_contact_error'];
+    unset($_SESSION['flash_contact_error']);
+}
+
+// Anti-spam config (adjust as needed)
+$min_submit_seconds = 3;
+$max_per_minute = 5;
+$max_per_hour = 20;
 
 $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
@@ -16,86 +29,85 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     $_SESSION['contact_form_started_at'] = time();
 }
 
-// Handle contact form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'contact_submit') {
+// Handle submission (PRG pattern)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'contact_submit') {
     if (!csrf_verify($_POST['csrf_token'] ?? null)) {
         $error_message = 'Invalid request. Please try again.';
     } else {
-        // Honeypot: should remain empty for humans
         $honeypot = trim((string)($_POST['company'] ?? ''));
-
-        // Submit-time threshold
         $started = (int)($_SESSION['contact_form_started_at'] ?? (time() - $min_submit_seconds));
         $elapsed = time() - $started;
-
-        // Simple per-IP rate limiting (session-based)
         $now = time();
-        if (!isset($_SESSION['rate_limit']['contact'][$ip]) || !is_array($_SESSION['rate_limit']['contact'][$ip])) {
-            $_SESSION['rate_limit']['contact'][$ip] = [];
-        }
-        // Keep only recent (last hour)
-        $_SESSION['rate_limit']['contact'][$ip] = array_values(array_filter(
-            $_SESSION['rate_limit']['contact'][$ip],
-            function ($ts) use ($now) { return ($now - (int)$ts) <= 3600; }
-        ));
-        $recent_minute = array_values(array_filter(
-            $_SESSION['rate_limit']['contact'][$ip],
-            function ($ts) use ($now) { return ($now - (int)$ts) <= 60; }
-        ));
-        $recent_hour = $_SESSION['rate_limit']['contact'][$ip];
+        $bucket =& $_SESSION['rate_limit']['contact'][$ip];
+        if (!isset($bucket) || !is_array($bucket)) { $bucket = []; }
+        // Purge >1h
+        $bucket = array_values(array_filter($bucket, fn($ts)=> ($now - (int)$ts) <= 3600));
+        $recent_minute = array_filter($bucket, fn($ts)=> ($now - (int)$ts) <= 60);
+        $too_fast = (count($recent_minute) >= $max_per_minute) || (count($bucket) >= $max_per_hour);
 
-        $too_fast = (count($recent_minute) >= $max_per_minute) || (count($recent_hour) >= $max_per_hour);
-
-        // Record this attempt timestamp regardless of outcome
-        $_SESSION['rate_limit']['contact'][$ip][] = $now;
-
-        // If honeypot tripped or form submitted too quickly, silently accept and drop
         if ($honeypot !== '' || $elapsed < $min_submit_seconds) {
-            $success_message = 'Thanks! Your message has been sent.';
+            // Silent discard
         } elseif ($too_fast) {
+            $bucket[] = $now; // count throttled attempt
             $error_message = 'You’re sending messages too fast. Please wait a minute and try again.';
         } else {
+            $bucket[] = $now; // legit attempt
             $name = trim((string)($_POST['name'] ?? ''));
             $email = trim((string)($_POST['email'] ?? ''));
             $subject = trim((string)($_POST['subject'] ?? ''));
             $message = trim((string)($_POST['message'] ?? ''));
 
-            // Simple validation
             if ($name === '' || $email === '' || $subject === '' || $message === '') {
                 $error_message = 'Please fill in all fields.';
             } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $error_message = 'Please provide a valid email address.';
             } else {
-                // Soft limits
-                if (strlen($name) > 120) { $name = substr($name, 0, 120); }
-                if (strlen($subject) > 200) { $subject = substr($subject, 0, 200); }
-                if (strlen($message) > 4000) { $message = substr($message, 0, 4000); }
+                // Trim lengths
+                if (strlen($name) > 120) $name = substr($name,0,120);
+                if (strlen($subject) > 200) $subject = substr($subject,0,200);
+                if (strlen($message) > 4000) $message = substr($message,0,4000);
 
-                // Determine destination email (defaults to your address if not set in settings)
-                $to = (string)get_setting('contact_email', 'borhanudiin1902@gmail.com');
-                if ($to === '') { $to = 'borhanudiin1902@gmail.com'; }
+                // Destination email (fallback)
+                $defaultContact = 'burhanuddin49945@gmail.com';
+                $to = (string)get_setting('contact_email', $defaultContact) ?: $defaultContact;
 
-                $body = "New contact form submission\n\n" .
-                        "Name: {$name}\n" .
-                        "Email: {$email}\n" .
-                        "Subject: {$subject}\n" .
-                        "IP: {$ip}\n" .
-                        "User-Agent: {$ua}\n" .
-                        "-----\n" .
-                        "Message:\n{$message}\n";
-
-                // Attempt to send using helper (falls back to log if mail not configured)
-                if (send_email($to, '[Contact] ' . $subject, $body, $email)) {
-                    $success_message = 'Thanks! Your message has been sent.';
-                } else {
-                    // Even if sending fails, it's logged; show a generic success to avoid spam probing
-                    $success_message = 'Thanks! Your message has been sent.';
+                // Persist message (best effort)
+                if (function_exists('db_connected') && db_connected()) {
+                    try {
+                        @$conn->query("CREATE TABLE IF NOT EXISTS contact_messages (\n                            id INT AUTO_INCREMENT PRIMARY KEY,\n                            name VARCHAR(120) NOT NULL,\n                            email VARCHAR(254) NOT NULL,\n                            subject VARCHAR(200) NOT NULL,\n                            message TEXT NOT NULL,\n                            ip VARCHAR(45) NULL,\n                            user_agent VARCHAR(255) NULL,\n                            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP\n                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                        if ($stmtIns = $conn->prepare('INSERT INTO contact_messages (name,email,subject,message,ip,user_agent) VALUES (?,?,?,?,?,?)')) {
+                            $stmtIns->bind_param('ssssss', $name, $email, $subject, $message, $ip, $ua);
+                            $stmtIns->execute();
+                            $stmtIns->close();
+                        }
+                    } catch (Throwable $e) { /* ignore */ }
                 }
+
+                // Email body
+                $safeName = htmlspecialchars($name, ENT_QUOTES,'UTF-8');
+                $safeEmail = htmlspecialchars($email, ENT_QUOTES,'UTF-8');
+                $safeSubject = htmlspecialchars($subject, ENT_QUOTES,'UTF-8');
+                $safeMsgHtml = nl2br(htmlspecialchars($message, ENT_QUOTES,'UTF-8'));
+                $bodyHtml = '<p><strong>New contact form submission</strong></p>'
+                    . '<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">'
+                    . '<tr><td style="padding:2px 6px;font-weight:bold;">Name:</td><td style="padding:2px 6px;">'.$safeName.'</td></tr>'
+                    . '<tr><td style="padding:2px 6px;font-weight:bold;">Email:</td><td style="padding:2px 6px;">'.$safeEmail.'</td></tr>'
+                    . '<tr><td style="padding:2px 6px;font-weight:bold;">Subject:</td><td style="padding:2px 6px;">'.$safeSubject.'</td></tr>'
+                    . '<tr><td style="padding:2px 6px;font-weight:bold;">IP:</td><td style="padding:2px 6px;">'.htmlspecialchars($ip,ENT_QUOTES,'UTF-8').'</td></tr>'
+                    . '<tr><td style="padding:2px 6px;font-weight:bold;">User-Agent:</td><td style="padding:2px 6px;">'.htmlspecialchars(substr($ua,0,240),ENT_QUOTES,'UTF-8').'</td></tr>'
+                    . '</table>'
+                    . '<hr style="margin:12px 0;border:none;border-top:1px solid #ddd;">'
+                    . '<p style="white-space:pre-line;">'.$safeMsgHtml.'</p>';
+                send_email($to, '[Contact] '.$subject, $bodyHtml, $email);
+                $success_message = 'Thanks! Your message has been sent.';
             }
         }
     }
-    // Reset the start time for the next render
     $_SESSION['contact_form_started_at'] = time();
+    if ($success_message !== null) $_SESSION['flash_contact_success'] = $success_message;
+    if ($error_message !== null)   $_SESSION['flash_contact_error'] = $error_message;
+    header('Location: contact.php');
+    exit;
 }
 ?>
 <!doctype html>
@@ -109,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <?php render_header(); ?>
 <div class="wrapper">
     <h2>Contact</h2>
-    <p>You can reach out via email at <a href="mailto:borhanudiin1902@gmail.com">borhanudiin1902@gmail.com</a> or send a message using the form below.</p>
+    <p>You can reach out via email at <a href="mailto:<?php echo htmlspecialchars(get_setting('contact_email', 'burhanuddin49945@gmail.com'), ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars(get_setting('contact_email', 'burhanuddin49945@gmail.com'), ENT_QUOTES, 'UTF-8'); ?></a> or send a message using the form below.</p>
 
     <?php if ($success_message): ?>
         <div class="alert alert-success"><?php echo htmlspecialchars($success_message, ENT_QUOTES, 'UTF-8'); ?></div>
