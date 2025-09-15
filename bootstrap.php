@@ -1,7 +1,7 @@
 <?php
-// bootstrap.php - central initialization: session, config, headers, helpers
+// Core bootstrap: session, config, autoload, shared helpers.
 
-// Apply secure session cookie settings before session_start
+// Secure session init (set cookie params before start)
 if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
     // Harden session behavior
     @ini_set('session.use_strict_mode', '1');
@@ -23,7 +23,7 @@ if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
     session_start();
 }
 
-// Root directory helper
+// Root directory constant
 if (!defined('ROOT_DIR')) {
     define('ROOT_DIR', __DIR__);
 }
@@ -31,21 +31,14 @@ if (!defined('ROOT_DIR')) {
 // Ensure config is loaded (always include once)
 require_once __DIR__ . '/config.php';
 
-// Composer autoload (PHPMailer, future libs)
+// Composer autoload
 $__autoload = __DIR__ . '/vendor/autoload.php';
 if (file_exists($__autoload)) {
     require_once $__autoload;
 }
 
 if (!function_exists('send_email')) {
-    /**
-     * send_email
-     * Order of attempts:
-     *  1. PHPMailer (SMTP) with optional debug capture
-     *  2. Minimal internal SMTP client (STARTTLS/SSL) with improved HELO domain handling
-     *  3. PHP mail() fallback
-     *  4. Log-only (always, if all else fails)
-     */
+    // send_email with multi-strategy fallback (PHPMailer -> raw SMTP -> mail() -> log)
     function send_email(string $to, string $subject, string $message, ?string $from = null): bool {
         // Pull SMTP config (constants override settings.json if non-empty)
         $smtpHost       = defined('SMTP_HOST') && constant('SMTP_HOST') !== '' ? (string)constant('SMTP_HOST') : (string)get_setting('smtp_host', '');
@@ -231,7 +224,7 @@ if (!function_exists('send_email')) {
         return $sent;
     }
 }
-// === Settings Helpers (JSON-backed) ===
+// Settings (JSON-backed)
 if (!function_exists('get_setting')) {
     function get_setting(string $key, $default = null) {
         static $cache = null; // in-request cache
@@ -262,7 +255,7 @@ if (!function_exists('save_setting')) {
         return (bool)@file_put_contents($file, json_encode($cache, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 }
-// Bulk helpers for settings admin page (compatibility with earlier code)
+// Bulk settings helpers
 if (!function_exists('get_settings_all')) {
     function get_settings_all(): array {
         $file = __DIR__ . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'settings.json';
@@ -284,7 +277,7 @@ if (!function_exists('save_settings')) {
     }
 }
 
-// === Flash message helpers ===
+// Flash messages
 if (!function_exists('flash_set')) {
     function flash_set(string $key, $value): void { $_SESSION['__flash'][$key] = $value; }
 }
@@ -297,7 +290,7 @@ if (!function_exists('flash_get')) {
     }
 }
 
-// === CSRF helpers ===
+// CSRF
 if (!function_exists('csrf_token')) {
     function csrf_token(): string {
         if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
@@ -318,7 +311,7 @@ if (!function_exists('csrf_verify')) {
     }
 }
 
-// -------- Path & layout helpers ---------
+// Path & layout helpers
 if (!function_exists('e')) {
     // HTML-escape helper (quotes and UTF-8 safe)
     function e($value): string { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
@@ -376,7 +369,7 @@ if (!function_exists('require_login')) {
 }
 
 if (!function_exists('require_admin')) {
-// -------- Shared simple config constants (for reuse in selects/UI) ---------
+// Shared constants
 if (!defined('ROLES')) {
     define('ROLES', ['admin','giver','seeker']);
 }
@@ -399,7 +392,7 @@ if (!defined('REQUEST_STATUSES')) {
     }
 }
 
-// -------- Small reusable UI helpers (non-breaking) ---------
+// UI helpers
 if (!function_exists('build_query')) {
     /**
      * Build a query string by merging current $_GET params with updates.
@@ -439,7 +432,7 @@ if (!function_exists('render_pagination')) {
     }
 }
 
-// -------- Shared image upload helper ---------
+// Image upload
 if (!function_exists('upload_image_secure')) {
     /**
      * Validates and saves an uploaded image file.
@@ -545,7 +538,7 @@ if (!function_exists('upload_image_secure')) {
     }
 }
 
-// ==== Email Verification Helpers (table-based) ====
+// Email verification
 // Uses table `verification_tokens` (id, user_id, token_hash, expires_at, used_at)
 // Also keeps users.email_verified in users table; optional shadow columns remain but are not required.
 
@@ -625,7 +618,7 @@ if (!function_exists('verification_require')) {
     function verification_require(): void { if (!isset($_SESSION['user_id'])) return; if (!verification_is_verified((int)$_SESSION['user_id'])) { header('Location: '.site_href('verify_notice.php?uid='.(int)$_SESSION['user_id'])); exit; } }
 }
 
-// ==== Password Reset Helpers (OTP mode only) ====
+// Password reset (OTP)
 // Uses legacy OTP-style password_resets table: id, user_id, email, otp_code, expires_at, used_at
 if (!function_exists('password_reset_create')) {
     function password_reset_create(string $email): bool {
@@ -759,7 +752,7 @@ if (!function_exists('password_reset_consume')) {
     }
 }
 
-// ================= Notifications System =================
+// Notifications
 if (!function_exists('notify_user')) {
     /**
      * Create an in-app notification (and optional email) for a user.
@@ -837,7 +830,7 @@ if (!function_exists('notifications_mark_read')) {
     }
 }
 
-// ================= Audit Log =================
+// Audit log
 if (!function_exists('audit_log')) {
     /** Log admin actions */
     function audit_log(string $action, string $targetTable, int $targetId = 0, array $meta = []): bool {
@@ -852,12 +845,7 @@ if (!function_exists('audit_log')) {
     }
 }
 
-// ================= Messaging Threading Roadmap (Not Implemented) =================
-// Suggested schema (manual migration):
-// CREATE TABLE conversations (conversation_id INT AUTO_INCREMENT PRIMARY KEY, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
-// ALTER TABLE messages ADD conversation_id INT NULL, ADD sender_deleted_at DATETIME NULL, ADD recipient_deleted_at DATETIME NULL, ADD read_at DATETIME NULL, ADD INDEX idx_conv (conversation_id);
-// Later: helper start_conversation($participants), message_send($conversationId,...), message_mark_read($messageId,...)
-// ==== Conversation Schema + Helpers (Threaded Messaging) ====
+// Conversations (threaded messaging)
 if (!function_exists('conversations_ensure_schema')) {
     function conversations_ensure_schema(): void {
         if (!db_connected()) return; global $conn;

@@ -93,7 +93,7 @@ if ($st = $conn->prepare("SELECT r.request_id, r.status, u1.username as requeste
                     <a href="<?php echo site_href('admin/services.php'); ?>" class="btn btn-default">⚙️ Manage Services</a>
                     <a href="<?php echo site_href('admin/requests.php'); ?>" class="btn btn-default">📋 Manage Requests</a>
                     <a href="<?php echo site_href('admin/reviews.php'); ?>" class="btn btn-default">⭐ Manage Reviews</a>
-                    <a href="<?php echo site_href('admin/messages.php'); ?>" class="btn btn-default">💬 Monitor Messages</a>
+                    <!-- Messages monitoring page removed -->
                     <a href="<?php echo site_href('admin/reports.php'); ?>" class="btn btn-default">📊 Reports & Analytics</a>
                     <a href="<?php echo site_href('admin/settings.php'); ?>" class="btn btn-default">⚙️ Platform Settings</a>
                 </div>
