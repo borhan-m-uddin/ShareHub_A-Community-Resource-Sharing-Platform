@@ -81,9 +81,8 @@ $latest_serv_t    = $latest_services[0]['title']?? 'Tutoring';
 
         /* Stats pills */
         .stats-row{ display:flex; gap:12px; flex-wrap:wrap; margin-top:18px; }
-        .pill{ background:rgba(255,255,255,.8); color:var(--text); border:1px solid var(--border); border-radius:999px; padding:8px 12px; box-shadow:0 6px 16px rgba(5,41,45,.08); }
-        @media (prefers-color-scheme: dark){ .pill{ background:rgba(10,15,30,.65);} }
-        html[data-theme='dark'] .pill{ background:rgba(10,15,30,.65); }
+    .pill{background: linear-gradient(135deg, rgba(79, 209, 217, .20), rgba(15, 163, 168, .26)); color:var(--text); border:1px solid rgba(15,163,168,.25); border-radius:999px; padding:8px 14px; box-shadow:0 4px 12px rgba(5,41,45,.10); font-weight:600; }
+    html[data-theme='dark'] .pill{ background:linear-gradient(135deg, rgba(79,209,217,.20), rgba(15,163,168,.28)); border-color:rgba(79,209,217,.40); color:#e8f2ff; }
 
         /* Feature tiles */
         .features{ margin-top:28px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
@@ -108,9 +107,9 @@ $latest_serv_t    = $latest_services[0]['title']?? 'Tutoring';
         .cta-band .actions a{ margin-left:10px; }
 
         .categories{ margin-top:24px; display:flex; flex-wrap:wrap; gap:10px; }
-        .tag{ display:inline-block; padding:8px 12px; border-radius:999px; background:#f6f9fb; border:1px solid var(--border); color:var(--text); font-weight:700; }
-        @media (prefers-color-scheme: dark){ .tag{ background:#0f172a; } }
-        html[data-theme='dark'] .tag{ background:#0f172a; }
+    .tag{ display:inline-block; padding:10px 16px; border-radius:999px; background:linear-gradient(135deg, rgba(15,163,168,.10), rgba(35,211,179,.16)); border:1px solid rgba(15,163,168,.30); color:var(--text); font-weight:600; letter-spacing:.2px; box-shadow:0 2px 6px rgba(5,41,45,.10); transition:transform .15s ease, box-shadow .2s ease, background .3s ease; }
+    .tag:hover{ transform:translateY(-2px); box-shadow:0 6px 18px rgba(5,41,45,.18); background:linear-gradient(135deg, rgba(15,163,168,.18), rgba(35,211,179,.26)); }
+    html[data-theme='dark'] .tag{ background:linear-gradient(135deg, rgba(79,209,217,.20), rgba(15,163,168,.26)); border-color:rgba(79,209,217,.45); color:#e8f2ff; }
 
         .how{ margin-top:28px; }
         .how-steps{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }

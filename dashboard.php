@@ -125,7 +125,7 @@ if (isset($conn) && $conn instanceof mysqli) {
             <a class="card" href="<?php echo site_href('profile.php'); ?>" style="text-decoration:none;">
                 <div class="card-body"><b>👤 Manage Profile</b><p class="muted" style="margin-top:6px;">Update your info and settings</p></div>
             </a>
-            <a class="card" href="<?php echo site_href('messages.php'); ?>" style="text-decoration:none;">
+            <a class="card" href="<?php echo site_href('conversations.php'); ?>" style="text-decoration:none;">
                 <div class="card-body"><b>💬 Messages</b><p class="muted" style="margin-top:6px;">Conversations and notifications</p></div>
             </a>
             <a class="card" href="<?php echo site_href('reviews.php'); ?>" style="text-decoration:none;">

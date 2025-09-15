@@ -17,6 +17,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $username = trim($_POST["username"] ?? "");
         $password = $_POST["password"] ?? "";
 
+        // Basic required field validation prior to any DB work
+        if ($username === '' || $password === '') {
+            $login_err = "Username and password are required.";
+        }
+
         // Simple rate limit: 5 attempts per 10 minutes per IP
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $now = time();
@@ -38,7 +43,10 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             } else {
                 $sql = "SELECT user_id, username, password_hash, role, email_verified FROM users WHERE username = ? LIMIT 1";
             }
-            if($stmt = $conn->prepare($sql)){
+            if (!$login_err && function_exists('db_connected') && !db_connected()) {
+                $login_err = "Service temporarily unavailable. Please try again.";
+            }
+            if(!$login_err && $stmt = $conn->prepare($sql)){
                 $stmt->bind_param("s", $username);
                 if($stmt->execute()){
                     $stmt->store_result();
@@ -68,7 +76,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 }
                 $stmt->close();
             }
-            $conn->close();
+            // Removed manual $conn->close(); keep for header rendering.
         }
     }
 }

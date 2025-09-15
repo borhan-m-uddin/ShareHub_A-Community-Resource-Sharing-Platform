@@ -170,8 +170,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-        // Close connection
-        $conn->close();
+    // Removed manual $conn->close(); avoid triggering false offline banner.
     }
 }
 ?>

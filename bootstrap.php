@@ -759,6 +759,315 @@ if (!function_exists('password_reset_consume')) {
     }
 }
 
+// ================= Notifications System =================
+if (!function_exists('notify_user')) {
+    /**
+     * Create an in-app notification (and optional email) for a user.
+     * Auto-creates the notifications table if missing.
+     * @param int $userId target user id
+     * @param string $type short machine type (request_status, system, etc.)
+     * @param string $subject short title
+     * @param string $body HTML/plain body snippet (sanitise before output elsewhere)
+     * @param string|null $relatedType optional related entity type (request, item, service)
+     * @param int|null $relatedId optional related entity id
+     * @param bool $alsoEmail send email copy (uses send_email helper if user has verified email)
+     */
+    function notify_user(int $userId, string $type, string $subject, string $body, ?string $relatedType = null, ?int $relatedId = null, bool $alsoEmail = false): bool {
+        if ($userId <= 0) return false; if (!db_connected()) return false; global $conn;
+        // Create table if needed
+        @ $conn->query("CREATE TABLE IF NOT EXISTS notifications (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            user_id INT NOT NULL,\n            type VARCHAR(40) NOT NULL,\n            subject VARCHAR(160) NOT NULL,\n            body TEXT NULL,\n            related_type VARCHAR(40) NULL,\n            related_id INT NULL,\n            is_read TINYINT(1) NOT NULL DEFAULT 0,\n            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n            read_at DATETIME NULL,\n            INDEX idx_user_read (user_id, is_read),\n            INDEX idx_related (related_type, related_id)\n        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $sql = 'INSERT INTO notifications (user_id,type,subject,body,related_type,related_id) VALUES (?,?,?,?,?,?)';
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->bind_param('issssi', $userId, $type, $subject, $body, $relatedType, $relatedId);
+            $ok = $stmt->execute();
+            $stmt->close();
+            if ($ok && $alsoEmail) {
+                // Fetch user email if verified
+                if ($uStmt = $conn->prepare('SELECT email, email_verified FROM users WHERE user_id=? LIMIT 1')) {
+                    $uStmt->bind_param('i',$userId); if ($uStmt->execute()) { $res=$uStmt->get_result(); if ($row=$res->fetch_assoc()) {
+                        if ((int)$row['email_verified']===1) { @send_email($row['email'], $subject, nl2br($body)); }
+                        if ($res) $res->free();
+                    }} $uStmt->close();
+                }
+            }
+            return $ok;
+        }
+        return false;
+    }
+}
+if (!function_exists('notifications_fetch_unread')) {
+    function notifications_fetch_unread(int $userId, int $limit = 10): array {
+        if ($userId<=0) return [];
+        // Attempt reconnect if gone
+        if (function_exists('db_reconnect_if_needed')) { db_reconnect_if_needed(); }
+        if (!db_connected()) return [];
+        global $conn; $out=[];
+        try {
+            if ($stmt=$conn->prepare('SELECT id,type,subject,body,related_type,related_id,created_at FROM notifications WHERE user_id=? AND is_read=0 ORDER BY id DESC LIMIT ?')) {
+                $stmt->bind_param('ii',$userId,$limit);
+                if ($stmt->execute()) {
+                    $res=$stmt->get_result();
+                    while($r=$res->fetch_assoc()) { $out[]=$r; }
+                    if ($res) $res->free();
+                }
+                $stmt->close();
+            }
+        } catch (Throwable $e) {
+            // Silently ignore (header should never fatal because of notifications)
+            return [];
+        }
+        return $out;
+    }
+}
+if (!function_exists('notifications_mark_read')) {
+    /** Mark specific notifications (ids array) or all unread if empty */
+    function notifications_mark_read(int $userId, array $ids = []): int {
+        if ($userId<=0 || !db_connected()) return 0; global $conn; $count=0;
+        if ($ids) {
+            // Sanitize ints
+            $ids = array_values(array_filter(array_map('intval',$ids), fn($v)=>$v>0)); if (!$ids) return 0;
+            $placeholders = implode(',', array_fill(0,count($ids),'?'));
+            $types = str_repeat('i', count($ids)+1); $params = array_merge([$userId], $ids);
+            $sql = 'UPDATE notifications SET is_read=1, read_at=NOW() WHERE user_id=? AND id IN ('.$placeholders.') AND is_read=0';
+            if ($stmt=$conn->prepare($sql)) { $stmt->bind_param($types, ...$params); $stmt->execute(); $count=$stmt->affected_rows; $stmt->close(); }
+        } else {
+            if ($stmt=$conn->prepare('UPDATE notifications SET is_read=1, read_at=NOW() WHERE user_id=? AND is_read=0')) { $stmt->bind_param('i',$userId); $stmt->execute(); $count=$stmt->affected_rows; $stmt->close(); }
+        }
+        return $count;
+    }
+}
 
+// ================= Audit Log =================
+if (!function_exists('audit_log')) {
+    /** Log admin actions */
+    function audit_log(string $action, string $targetTable, int $targetId = 0, array $meta = []): bool {
+        if (!db_connected()) return false; if (!isset($_SESSION['role']) || $_SESSION['role']!=='admin') return false; global $conn;
+        $adminId = (int)($_SESSION['user_id'] ?? 0); if ($adminId<=0) return false;
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        @ $conn->query("CREATE TABLE IF NOT EXISTS audit_log (\n            id INT AUTO_INCREMENT PRIMARY KEY,\n            admin_user_id INT NOT NULL,\n            action VARCHAR(60) NOT NULL,\n            target_table VARCHAR(60) NOT NULL,\n            target_id INT NOT NULL DEFAULT 0,\n            meta_json JSON NULL,\n            ip VARCHAR(45) NULL,\n            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n            INDEX idx_admin (admin_user_id),\n            INDEX idx_target (target_table,target_id)\n        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $json = $meta ? json_encode($meta, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) : null;
+        if ($stmt=$conn->prepare('INSERT INTO audit_log (admin_user_id,action,target_table,target_id,meta_json,ip) VALUES (?,?,?,?,?,?)')) {
+            $stmt->bind_param('ississ',$adminId,$action,$targetTable,$targetId,$json,$ip); $ok=$stmt->execute(); $stmt->close(); return $ok; }
+        return false;
+    }
+}
+
+// ================= Messaging Threading Roadmap (Not Implemented) =================
+// Suggested schema (manual migration):
+// CREATE TABLE conversations (conversation_id INT AUTO_INCREMENT PRIMARY KEY, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
+// ALTER TABLE messages ADD conversation_id INT NULL, ADD sender_deleted_at DATETIME NULL, ADD recipient_deleted_at DATETIME NULL, ADD read_at DATETIME NULL, ADD INDEX idx_conv (conversation_id);
+// Later: helper start_conversation($participants), message_send($conversationId,...), message_mark_read($messageId,...)
+// ==== Conversation Schema + Helpers (Threaded Messaging) ====
+if (!function_exists('conversations_ensure_schema')) {
+    function conversations_ensure_schema(): void {
+        if (!db_connected()) return; global $conn;
+        static $done = false; if ($done) return; $done = true;
+        // Create conversations table
+        @ $conn->query("CREATE TABLE IF NOT EXISTS conversations (
+                conversation_id INT AUTO_INCREMENT PRIMARY KEY,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        // Create participants table
+        @ $conn->query("CREATE TABLE IF NOT EXISTS conversation_participants (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                conversation_id INT NOT NULL,
+                user_id INT NOT NULL,
+                last_read_at DATETIME NULL,
+                joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_conv_user (conversation_id, user_id),
+                KEY idx_user (user_id),
+                CONSTRAINT fk_cp_conv FOREIGN KEY (conversation_id) REFERENCES conversations(conversation_id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        // Add columns to messages if missing
+        $colsRes = @$conn->query('SHOW COLUMNS FROM messages');
+        $have = [];
+        if ($colsRes) { while($r=$colsRes->fetch_assoc()){ $have[strtolower($r['Field'])]=true; } $colsRes->free(); }
+        $alterParts = [];
+        if (!isset($have['conversation_id'])) { $alterParts[] = 'ADD COLUMN conversation_id INT NULL'; }
+        if (!isset($have['read_at'])) { $alterParts[] = 'ADD COLUMN read_at DATETIME NULL'; }
+        if (!isset($have['sender_deleted_at'])) { $alterParts[] = 'ADD COLUMN sender_deleted_at DATETIME NULL'; }
+        if (!isset($have['recipient_deleted_at'])) { $alterParts[] = 'ADD COLUMN recipient_deleted_at DATETIME NULL'; }
+        if ($alterParts) {
+            @ $conn->query('ALTER TABLE messages ' . implode(', ', $alterParts));
+        }
+        // Add index if not present
+        $idxRes = @$conn->query("SHOW INDEX FROM messages WHERE Key_name='idx_conv'");
+        if (!$idxRes || $idxRes->num_rows === 0) { @ $conn->query('ALTER TABLE messages ADD INDEX idx_conv (conversation_id)'); }
+        if ($idxRes) { $idxRes->free(); }
+    }
+}
+
+// Start or fetch a conversation among given user IDs (currently supports 2 participants typical for legacy messages)
+if (!function_exists('conversation_start')) {
+    function conversation_start(array $userIds): ?int {
+        conversations_ensure_schema(); if (!db_connected()) return null; global $conn;
+        // Normalise & limit (initially 2 participants)
+        $userIds = array_values(array_unique(array_map('intval', $userIds)));
+        $userIds = array_filter($userIds, fn($v)=>$v>0);
+        if (count($userIds) < 2) return null; // need at least two users
+        sort($userIds);
+        // For 2-user conversation we try to find existing one via participants intersection
+        if (count($userIds) === 2) {
+            [$a,$b] = $userIds;
+            $sql = "SELECT cp1.conversation_id FROM conversation_participants cp1
+                    JOIN conversation_participants cp2 ON cp1.conversation_id=cp2.conversation_id
+                    WHERE cp1.user_id=? AND cp2.user_id=? LIMIT 1";
+            if ($st=$conn->prepare($sql)) { $st->bind_param('ii',$a,$b); if($st->execute()){ $r=$st->get_result()->fetch_assoc(); if($r){ $cid=(int)$r['conversation_id']; $st->close(); return $cid; } } $st->close(); }
+        }
+        // Create new conversation
+        if (!$conn->query('INSERT INTO conversations () VALUES ()')) { return null; }
+        $cid = (int)$conn->insert_id; if ($cid<=0) return null;
+        // Insert participants
+        foreach ($userIds as $uid) { @ $conn->query('INSERT IGNORE INTO conversation_participants (conversation_id,user_id) VALUES ('.(int)$cid.','.(int)$uid.')'); }
+        return $cid;
+    }
+}
+
+// Lazy backfill just for the currently logged-in user's view to ensure their legacy messages appear as threads
+if (!function_exists('conversation_lazy_backfill_for_user')) {
+    function conversation_lazy_backfill_for_user(int $userId, int $limitPairs = 100): void {
+        conversations_ensure_schema(); if (!db_connected()) return; global $conn; $userId=(int)$userId; if($userId<=0) return;
+        // Find up to N distinct pairs involving this user lacking conversation_id
+        $sql = "SELECT LEAST(sender_id,receiver_id) a, GREATEST(sender_id,receiver_id) b
+                FROM messages
+                WHERE conversation_id IS NULL AND (sender_id=$userId OR receiver_id=$userId) AND sender_id<>receiver_id
+                GROUP BY a,b
+                LIMIT " . (int)$limitPairs;
+        if ($res = $conn->query($sql)) {
+            while($row=$res->fetch_assoc()) {
+                $a=(int)$row['a']; $b=(int)$row['b']; if ($a<=0||$b<=0) continue; if ($a===$b) continue;
+                $cid = conversation_start([$a,$b]); if(!$cid) continue;
+                // Attach any lingering messages for that pair
+                @ $conn->query('UPDATE messages SET conversation_id='.(int)$cid.' WHERE conversation_id IS NULL AND ((sender_id='.(int)$a.' AND receiver_id='.(int)$b.') OR (sender_id='.(int)$b.' AND receiver_id='.(int)$a.'))');
+            }
+            $res->free();
+        }
+    }
+}
+
+if (!function_exists('conversation_send')) {
+    /**
+     * Insert a message into a conversation.
+     * @param int $conversationId
+     * @param int $senderId
+     * @param string $body message body (required)
+     * @param string|null $subject optional subject
+     * @param int|null $requestId optional legacy request linkage (if provided will populate messages.request_id)
+     */
+    function conversation_send(int $conversationId, int $senderId, string $body, ?string $subject = null, ?int $requestId = null): ?int {
+        conversations_ensure_schema(); if (!db_connected()) return null; global $conn;
+        $conversationId = (int)$conversationId; $senderId=(int)$senderId; $body=trim($body); $subject=trim((string)$subject);
+        if ($conversationId<=0 || $senderId<=0 || $body==='') return null;
+        // Ensure sender is participant
+        if ($st=$conn->prepare('SELECT 1 FROM conversation_participants WHERE conversation_id=? AND user_id=? LIMIT 1')) {
+            $st->bind_param('ii',$conversationId,$senderId); $st->execute(); $ok=$st->get_result()->fetch_row(); $st->close(); if(!$ok) return null; }
+        // Insert message (reuse legacy messages table)
+        // Legacy table columns: sender_id, receiver_id, request_id, subject, message_content, sent_date, is_read
+        // We will store receiver_id as 0 (unused) because participants table defines membership; keep subject optional.
+        $receiverPlaceholder = 0; // conversation-based
+        $mid = null;
+        // clear previous error tracker
+        $GLOBALS['conversation_send_error'] = null;
+        if ($requestId !== null && $requestId > 0) {
+            $sql='INSERT INTO messages (sender_id, receiver_id, request_id, subject, message_content, conversation_id, sent_date, is_read) VALUES (?,?,?,?,?,?,NOW(),0)';
+            if ($st=$conn->prepare($sql)) {
+                $st->bind_param('iiissi',$senderId,$receiverPlaceholder,$requestId,$subject,$body,$conversationId);
+                if($st->execute()) { $mid=(int)$st->insert_id; }
+                else { $GLOBALS['conversation_send_error'] = $st->error ?: $conn->error; }
+                $st->close();
+            }
+        } else {
+            $sql='INSERT INTO messages (sender_id, receiver_id, subject, message_content, conversation_id, sent_date, is_read) VALUES (?,?,?,?,?,NOW(),0)';
+            if ($st=$conn->prepare($sql)) {
+                $st->bind_param('iissi',$senderId,$receiverPlaceholder,$subject,$body,$conversationId);
+                if($st->execute()) { $mid=(int)$st->insert_id; }
+                else { $GLOBALS['conversation_send_error'] = $st->error ?: $conn->error; }
+                $st->close();
+            }
+        }
+        if ($mid) {
+            @ $conn->query('UPDATE conversations SET updated_at=NOW() WHERE conversation_id='.(int)$conversationId.' LIMIT 1');
+            // Notify other participants (exclude sender). Use short preview.
+            $preview = mb_substr($body,0,120);
+            if (function_exists('notify_user')) {
+                $resP = @$conn->query('SELECT user_id FROM conversation_participants WHERE conversation_id='.(int)$conversationId.' AND user_id<>'.(int)$senderId);
+                if ($resP) {
+                    while($rp=$resP->fetch_assoc()) { notify_user((int)$rp['user_id'],'message_new','New message', e($preview), 'conversation', $conversationId, false); }
+                    $resP->free();
+                }
+            }
+            return $mid;
+        }
+        return null;
+    }
+}
+
+if (!function_exists('conversation_list')) {
+    function conversation_list(int $userId, int $limit = 20, int $offset = 0): array {
+        conversations_ensure_schema(); if (!db_connected()) return []; global $conn; $out=[];
+        conversation_lazy_backfill_for_user($userId); // ensure legacy messages appear
+        $sql = "SELECT c.conversation_id,
+                       c.updated_at,
+                       MAX(m.sent_date) last_msg_at,
+                       SUBSTRING_INDEX(MAX(CONCAT(m.sent_date,'\t',m.message_content)), '\t', -1) last_msg_body,
+                       COUNT(CASE WHEN (m.is_read=0 OR m.read_at IS NULL) AND m.sender_id<>? THEN 1 END) unread_count,
+                       COALESCE(u_other.username, '(user)') AS other_username
+                FROM conversations c
+                JOIN conversation_participants cp_self ON cp_self.conversation_id=c.conversation_id AND cp_self.user_id=?
+                LEFT JOIN conversation_participants cp_other ON cp_other.conversation_id=c.conversation_id AND cp_other.user_id<>?
+                LEFT JOIN users u_other ON u_other.user_id=cp_other.user_id
+                LEFT JOIN messages m ON m.conversation_id=c.conversation_id
+                GROUP BY c.conversation_id, other_username
+                ORDER BY c.updated_at DESC
+                LIMIT ?,?";
+        if ($st=$conn->prepare($sql)) {
+            $st->bind_param('iiiii',$userId,$userId,$userId,$offset,$limit);
+            if($st->execute()) { $res=$st->get_result(); while($r=$res->fetch_assoc()){ $out[]=$r; } $res->free(); }
+            $st->close();
+        }
+        return $out;
+    }
+}
+
+if (!function_exists('conversation_fetch')) {
+    /**
+     * Fetch messages for a conversation plus sender username/name.
+     * (Lightweight; for large histories implement pagination via beforeMessageId.)
+     */
+    function conversation_fetch(int $userId, int $conversationId, int $limit = 200, int $beforeMessageId = 0): array {
+        conversations_ensure_schema(); if (!db_connected()) return ['ok'=>false,'messages'=>[]]; global $conn;
+        $conversationId=(int)$conversationId; $userId=(int)$userId; $limit=max(1,min(400,$limit)); $beforeMessageId=(int)$beforeMessageId;
+        // Verify membership
+        if ($st=$conn->prepare('SELECT 1 FROM conversation_participants WHERE conversation_id=? AND user_id=? LIMIT 1')) {
+            $st->bind_param('ii',$conversationId,$userId); $st->execute(); $m=$st->get_result()->fetch_row(); $st->close(); if(!$m) return ['ok'=>false,'messages'=>[]]; }
+        // Fetch in ascending order so earliest first
+        $cond = $beforeMessageId>0 ? 'AND m.message_id > '.(int)$beforeMessageId : '';
+        $sql = "SELECT m.message_id, m.sender_id, m.subject, m.message_content, m.sent_date, m.is_read, m.read_at,
+                       u.username AS sender_username, u.first_name, u.last_name
+                FROM messages m
+                LEFT JOIN users u ON u.user_id = m.sender_id
+                WHERE m.conversation_id=? $cond
+                ORDER BY m.message_id ASC
+                LIMIT ?";
+        $out=[]; if ($st=$conn->prepare($sql)) { $st->bind_param('ii',$conversationId,$limit); if($st->execute()){ $res=$st->get_result(); while($r=$res->fetch_assoc()){ $out[]=$r; } $res->free(); } $st->close(); }
+        return ['ok'=>true,'messages'=>$out];
+    }
+}
+
+if (!function_exists('conversation_mark_read')) {
+    function conversation_mark_read(int $userId, int $conversationId): int {
+        conversations_ensure_schema(); if (!db_connected()) return 0; global $conn;
+        $userId=(int)$userId; $conversationId=(int)$conversationId; if($userId<=0||$conversationId<=0) return 0;
+        // Ensure membership
+        if ($st=$conn->prepare('SELECT 1 FROM conversation_participants WHERE conversation_id=? AND user_id=? LIMIT 1')) { $st->bind_param('ii',$conversationId,$userId); $st->execute(); $ok=$st->get_result()->fetch_row(); $st->close(); if(!$ok) return 0; }
+        // Mark messages (recipient model changed; mark all not sent by this user)
+        @ $conn->query('UPDATE messages SET is_read=1, read_at=NOW() WHERE conversation_id='.(int)$conversationId.' AND sender_id<>'.(int)$userId.' AND (is_read=0 OR read_at IS NULL)');
+        @ $conn->query('UPDATE conversation_participants SET last_read_at=NOW() WHERE conversation_id='.(int)$conversationId.' AND user_id='.(int)$userId.' LIMIT 1');
+        return (int)$conn->affected_rows; // approximate
+    }
+}
+
+// END threaded messaging additions
 
 ?>

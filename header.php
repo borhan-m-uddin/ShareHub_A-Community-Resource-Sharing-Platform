@@ -19,6 +19,52 @@
                     <a href="<?php echo site_href('admin/panel.php'); ?>">Admin Panel</a>
                     <a href="<?php echo site_href('admin/requests.php'); ?>">Requests</a>
                 <?php endif; ?>
+                <?php
+                // Fetch a small batch of unread notifications for the bell dropdown
+                $unreadCount = 0; $unreadList = [];
+                if (function_exists('notifications_fetch_unread') && isset($_SESSION['user_id'])) {
+                    $unreadList = notifications_fetch_unread((int)$_SESSION['user_id'], 7);
+                    $unreadCount = count($unreadList);
+                }
+                ?>
+                <div class="notif-bell" style="position:relative;display:inline-block;">
+                    <a href="#" class="notif-toggle" aria-haspopup="true" aria-expanded="false" title="Notifications" style="position:relative;display:inline-flex;align-items:center;gap:4px;padding:0 4px;">
+                        <span style="font-size:18px;line-height:1;">🔔</span>
+                        <?php if ($unreadCount): ?>
+                            <span class="notif-badge" style="position:absolute;top:-4px;right:-4px;background:#d9534f;color:#fff;font-size:11px;line-height:1;padding:2px 5px;border-radius:10px;min-width:18px;text-align:center;">
+                                <?php echo $unreadCount; ?>
+                            </span>
+                        <?php endif; ?>
+                    </a>
+                    <div class="notif-menu" style="display:none;position:absolute;right:0;top:100%;margin-top:6px;width:340px;max-height:420px;overflow-y:auto;background:var(--panel-bg,#fff);border:1px solid #ccc;box-shadow:0 4px 14px rgba(0,0,0,.15);border-radius:6px;z-index:1000;">
+                        <div style="padding:8px 10px;border-bottom:1px solid #e5e5e5;font-weight:600;font-size:14px;">Notifications</div>
+                        <?php if (!$unreadCount): ?>
+                            <div style="padding:12px 10px;font-size:13px;color:#666;">No new notifications</div>
+                        <?php else: ?>
+                            <?php foreach ($unreadList as $n): ?>
+                                <div style="padding:8px 10px;border-bottom:1px solid #f2f2f2;font-size:13px;">
+                                    <div style="font-weight:600;"><?php echo e($n['subject']); ?></div>
+                                    <?php if (!empty($n['body'])): ?>
+                                        <div style="margin-top:2px;color:#555;line-height:1.3;">
+                                            <?php echo $n['body']; // body may contain trusted HTML generated server-side ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div style="margin-top:4px;font-size:11px;color:#888;">
+                                        <?php echo date('M j, H:i', strtotime($n['created_at'])); ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                            <form method="post" action="<?php echo site_href('notifications_mark_read.php'); ?>" style="margin:0;">
+                                <?php if (function_exists('csrf_field')) echo csrf_field(); ?>
+                                <input type="hidden" name="all" value="1" />
+                                <button type="submit" class="btn btn-default" style="font-size:12px;padding:4px 8px;">Mark all read</button>
+                            </form>
+                            <a href="<?php echo site_href('notifications.php'); ?>" style="font-size:12px;">View all</a>
+                        </div>
+                    </div>
+                </div>
                 <a href="<?php echo site_href('profile.php'); ?>">Profile</a>
                 <a href="<?php echo site_href('logout.php'); ?>">Logout</a>
             <?php else: ?>
@@ -96,6 +142,30 @@
         if(t && t.tagName === 'A' && nav.classList.contains('open')){
             nav.classList.remove('open');
             setExpanded(false);
+        }
+    });
+})();
+// Notifications bell toggle (simple client-side show/hide)
+(function(){
+    var bell = document.querySelector('.notif-bell .notif-toggle');
+    var menu = document.querySelector('.notif-bell .notif-menu');
+    if(!bell || !menu) return;
+    bell.addEventListener('click', function(ev){
+        ev.preventDefault();
+        var open = menu.style.display === 'block';
+        menu.style.display = open ? 'none' : 'block';
+        bell.setAttribute('aria-expanded', open ? 'false' : 'true');
+    });
+    document.addEventListener('click', function(ev){
+        if(menu.style.display === 'block' && !menu.contains(ev.target) && !bell.contains(ev.target)){
+            menu.style.display = 'none';
+            bell.setAttribute('aria-expanded','false');
+        }
+    });
+    document.addEventListener('keydown', function(ev){
+        if(ev.key === 'Escape' && menu.style.display === 'block'){
+            menu.style.display='none';
+            bell.setAttribute('aria-expanded','false');
         }
     });
 })();

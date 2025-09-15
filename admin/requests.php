@@ -19,6 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
                 $stmt->execute();
                 $stmt->close();
                 flash_set('success', 'Request deleted.');
+                // Audit
+                @audit_log('delete_request','requests',$rid,['admin'=>($_SESSION['user_id']??0)]);
             }
         } else {
             $newStatus = $action === 'approve' ? 'approved' : ($action === 'reject' ? 'rejected' : 'completed');
@@ -35,6 +37,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
                     $stmt2->close();
                 }
             }
+            // Fetch requester (and giver if needed) for notifications
+            if ($uStmt = $conn->prepare('SELECT requester_id, giver_id FROM requests WHERE request_id=? LIMIT 1')) {
+                $uStmt->bind_param('i',$rid); if ($uStmt->execute()) { $rres=$uStmt->get_result(); if ($row=$rres->fetch_assoc()) {
+                    $reqId = (int)$row['requester_id']; $giverId = (int)$row['giver_id'];
+                    $sub = 'Your request #'.$rid.' was '.ucfirst($newStatus);
+                    $body = 'Status update: request #'.$rid.' is now '.ucfirst($newStatus).'.';
+                    @notify_user($reqId,'request_status',$sub,$body,'request',$rid,false);
+                    // Optionally notify giver for completion
+                    if ($giverId && $newStatus==='completed') { @notify_user($giverId,'request_status','Request #'.$rid.' completed',$body,'request',$rid,false); }
+                } if ($rres) $rres->free(); }
+                $uStmt->close();
+            }
+            // Audit
+            @audit_log('update_request_status','requests',$rid,['status'=>$newStatus]);
             flash_set('success', 'Request status updated to ' . ucfirst($newStatus) . '.');
         }
     }

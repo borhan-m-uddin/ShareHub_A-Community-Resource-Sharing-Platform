@@ -75,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["request_id"], $_POST[
     }
 }
 
-$conn->close();
+// Removed manual $conn->close(); allow global connection to persist until script end to avoid header offline banner.
 ?>
 <!DOCTYPE html>
 <html lang="en">

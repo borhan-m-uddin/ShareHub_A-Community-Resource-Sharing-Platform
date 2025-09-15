@@ -24,7 +24,7 @@ if($stmt = $conn->prepare($sql)){
     }
     $stmt->close();
 }
-$conn->close();
+// Removed manual $conn->close(); global connection stays open for header / further components.
 ?>
 <!DOCTYPE html>
 <html lang="en">
