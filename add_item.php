@@ -1,5 +1,4 @@
 <?php
-// Central bootstrap and auth
 require_once __DIR__ . '/bootstrap.php';
 
 // Require giver role
@@ -7,19 +6,16 @@ if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || ($_SESSIO
     header("location: login.php");
     exit;
 }
-// Require verified email for posting items
-// email verification no longer required
+
 
 // Initialize state
 $title = $description = $category = $pickup_location = "";
 $condition_status = 'good';
 $title_err = $description_err = $category_err = $pickup_location_err = $image_err = $condition_err = "";
-$saved_image_url = null; // relative path stored into DB image_url
+$saved_image_url = null;
 
-// Processing form data when form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    // CSRF protection
     if (!csrf_verify($_POST['csrf_token'] ?? null)) {
         echo "Invalid request. Please refresh and try again.";
         exit;
@@ -27,16 +23,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Validate title
     $title = trim((string)($_POST["title"] ?? ''));
-    if ($title === '') { $title_err = "Please enter a title for the item."; }
-    elseif (mb_strlen($title) > 150) { $title_err = "Title must be 150 characters or less."; }
+    if ($title === '') {
+        $title_err = "Please enter a title for the item.";
+    } elseif (mb_strlen($title) > 150) {
+        $title_err = "Title must be 150 characters or less.";
+    }
 
     // Validate description
     $description = trim((string)($_POST["description"] ?? ''));
-    if ($description === '') { $description_err = "Please enter a description for the item."; }
-    elseif (mb_strlen($description) > 2000) { $description_err = "Description must be 2000 characters or less."; }
+    if ($description === '') {
+        $description_err = "Please enter a description for the item.";
+    } elseif (mb_strlen($description) > 2000) {
+        $description_err = "Description must be 2000 characters or less.";
+    }
 
     // Validate category (whitelist basic options)
-    $allowed_categories = ['tools','books','electronics','garden','other'];
+    $allowed_categories = ['tools', 'books', 'electronics', 'garden', 'other'];
     $category = trim((string)($_POST["category"] ?? ''));
     if ($category === '' || !in_array($category, $allowed_categories, true)) {
         $category_err = "Please select a valid category.";
@@ -44,11 +46,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Validate pickup location (align with schema)
     $pickup_location = trim((string)($_POST["pickup_location"] ?? ''));
-    if ($pickup_location === '') { $pickup_location_err = "Please enter the pickup location."; }
-    elseif (mb_strlen($pickup_location) > 255) { $pickup_location_err = "Pickup location must be 255 characters or less."; }
+    if ($pickup_location === '') {
+        $pickup_location_err = "Please enter the pickup location.";
+    } elseif (mb_strlen($pickup_location) > 255) {
+        $pickup_location_err = "Pickup location must be 255 characters or less.";
+    }
 
     // Validate condition status (enum)
-    $allowed_conditions = ['new','like_new','good','fair','poor'];
+    $allowed_conditions = ['new', 'like_new', 'good', 'fair', 'poor'];
     $condition_status = trim((string)($_POST['condition_status'] ?? 'good'));
     if (!in_array($condition_status, $allowed_conditions, true)) {
         $condition_status = 'good';
@@ -57,7 +62,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Handle single image upload (stores path in image_url)
     if (isset($_FILES['image']) && is_array($_FILES['image']) && ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
         $res = upload_image_secure($_FILES['image'], 'uploads/items', 2_000_000, 1600, 1200);
-        if ($res['ok']) { $saved_image_url = $res['pathRel']; } else { $image_err = $res['error']; }
+        if ($res['ok']) {
+            $saved_image_url = $res['pathRel'];
+        } else {
+            $image_err = $res['error'];
+        }
     }
 
     // Insert when valid
@@ -87,17 +96,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Add New Item</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
+
 <body>
     <?php render_header(); ?>
     <div class="wrapper">
         <h2>Add New Item</h2>
         <p>Please fill this form to add a new item for sharing.</p>
-    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" enctype="multipart/form-data">
+        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" enctype="multipart/form-data">
             <?php echo csrf_field(); ?>
             <div class="form-group <?php echo (!empty($title_err)) ? 'has-error' : ''; ?>">
                 <label>Title</label>
@@ -124,11 +135,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="form-group">
                 <label>Condition</label>
                 <select name="condition_status" class="form-control">
-                    <option value="new" <?php echo $condition_status==='new'?'selected':''; ?>>New</option>
-                    <option value="like_new" <?php echo $condition_status==='like_new'?'selected':''; ?>>Like New</option>
-                    <option value="good" <?php echo $condition_status==='good'?'selected':''; ?>>Good</option>
-                    <option value="fair" <?php echo $condition_status==='fair'?'selected':''; ?>>Fair</option>
-                    <option value="poor" <?php echo $condition_status==='poor'?'selected':''; ?>>Poor</option>
+                    <option value="new" <?php echo $condition_status === 'new' ? 'selected' : ''; ?>>New</option>
+                    <option value="like_new" <?php echo $condition_status === 'like_new' ? 'selected' : ''; ?>>Like New</option>
+                    <option value="good" <?php echo $condition_status === 'good' ? 'selected' : ''; ?>>Good</option>
+                    <option value="fair" <?php echo $condition_status === 'fair' ? 'selected' : ''; ?>>Fair</option>
+                    <option value="poor" <?php echo $condition_status === 'poor' ? 'selected' : ''; ?>>Poor</option>
                 </select>
             </div>
             <div class="form-group <?php echo (!empty($pickup_location_err)) ? 'has-error' : ''; ?>">
@@ -150,5 +161,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
     <?php render_footer(); ?>
 </body>
-</html>
 
+</html>

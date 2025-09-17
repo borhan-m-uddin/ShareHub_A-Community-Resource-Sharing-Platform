@@ -1,17 +1,15 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 // Check if the user is logged in and is a Giver, otherwise redirect to login page
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== "giver"){
+if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["role"] !== "giver") {
     header("location: " . site_href('login.php'));
     exit;
 }
-// email verification no longer required
 
 $title = $description = $category = $expertise_level = $availability = $preferred_exchange = "";
 $title_err = $description_err = $category_err = $expertise_level_err = $availability_err = $preferred_exchange_err = "";
 
-// Processing form data when form is submitted
-if($_SERVER["REQUEST_METHOD"] == "POST"){
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // CSRF protection
     if (!csrf_verify($_POST['csrf_token'] ?? null)) {
@@ -20,58 +18,68 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     }
 
     // Validate title
-    if(empty(trim($_POST["title"]))){
+    if (empty(trim($_POST["title"]))) {
         $title_err = "Please enter a title for the service.";
-    } else{
+    } else {
         $title = trim($_POST["title"]);
-        if (mb_strlen($title) > 150) { $title_err = "Title must be 150 characters or less."; }
+        if (mb_strlen($title) > 150) {
+            $title_err = "Title must be 150 characters or less.";
+        }
     }
 
     // Validate description
-    if(empty(trim($_POST["description"]))){
+    if (empty(trim($_POST["description"]))) {
         $description_err = "Please enter a description for the service.";
-    } else{
+    } else {
         $description = trim($_POST["description"]);
-        if (mb_strlen($description) > 2000) { $description_err = "Description must be 2000 characters or less."; }
+        if (mb_strlen($description) > 2000) {
+            $description_err = "Description must be 2000 characters or less.";
+        }
     }
 
     // Validate category
-    if(empty(trim($_POST["category"]))){
+    if (empty(trim($_POST["category"]))) {
         $category_err = "Please select a category.";
-    } else{
+    } else {
         $category = trim($_POST["category"]);
     }
 
     // Validate expertise level
-    if(empty(trim($_POST["expertise_level"]))){
+    if (empty(trim($_POST["expertise_level"]))) {
         $expertise_level_err = "Please enter your expertise level.";
-    } else{
+    } else {
         $expertise_level = trim($_POST["expertise_level"]);
-        if (mb_strlen($expertise_level) > 100) { $expertise_level_err = "Expertise must be 100 characters or less."; }
+        if (mb_strlen($expertise_level) > 100) {
+            $expertise_level_err = "Expertise must be 100 characters or less.";
+        }
     }
 
     // Validate availability
-    if(empty(trim($_POST["availability"]))){
+    if (empty(trim($_POST["availability"]))) {
         $availability_err = "Please specify your availability.";
-    } else{
+    } else {
         $availability = trim($_POST["availability"]);
-        if (mb_strlen($availability) > 2000) { $availability_err = "Availability must be 2000 characters or less."; }
+        if (mb_strlen($availability) > 2000) {
+            $availability_err = "Availability must be 2000 characters or less.";
+        }
     }
 
     // Validate preferred exchange
-    if(empty(trim($_POST["preferred_exchange"]))){
+    if (empty(trim($_POST["preferred_exchange"]))) {
         $preferred_exchange_err = "Please specify preferred exchange terms.";
-    } else{
+    } else {
         $preferred_exchange = trim($_POST["preferred_exchange"]);
-        if (mb_strlen($preferred_exchange) > 1000) { $preferred_exchange_err = "Preferred exchange must be 1000 characters or less."; }
+        if (mb_strlen($preferred_exchange) > 1000) {
+            $preferred_exchange_err = "Preferred exchange must be 1000 characters or less.";
+        }
     }
 
     // Check input errors before inserting in database
-    if(empty($title_err) && empty($description_err) && empty($category_err) && empty($expertise_level_err) && empty($availability_err) && empty($preferred_exchange_err)){
+    if (empty($title_err) && empty($description_err) && empty($category_err) && empty($expertise_level_err) && empty($availability_err) && empty($preferred_exchange_err)) {
         // Prepare an insert statement
         $sql = "INSERT INTO services (giver_id, title, description, category, expertise_level, availability, preferred_exchange) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-        if($stmt = $conn->prepare($sql)){
+        if ($stmt = $conn->prepare($sql)) {
             // Bind variables to the prepared statement as parameters
             $stmt->bind_param("issssss", $param_giver_id, $param_title, $param_description, $param_category, $param_expertise_level, $param_availability, $param_preferred_exchange);
 
@@ -85,9 +93,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             $param_preferred_exchange = $preferred_exchange;
 
             // Attempt to execute the prepared statement
-            if($stmt->execute()){
+            if ($stmt->execute()) {
                 header("location: dashboard.php");
-            } else{
+            } else {
                 echo "Something went wrong. Please try again later.";
             }
 
@@ -102,17 +110,19 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Add New Service</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
+
 <body>
     <?php render_header(); ?>
     <div class="wrapper">
         <h2>Add New Service</h2>
         <p>Please fill this form to offer a new service for sharing.</p>
-    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
             <?php echo csrf_field(); ?>
             <div class="form-group <?php echo (!empty($title_err)) ? 'has-error' : ''; ?>">
                 <label>Service Title</label>
@@ -159,5 +169,5 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     </div>
     <?php render_footer(); ?>
 </body>
-</html>
 
+</html>

@@ -1,12 +1,11 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 require_login();
-verification_require(); // enforce verified email if system uses it
+verification_require();
 
 $userId = (int)($_SESSION['user_id'] ?? 0);
 if ($userId <= 0) { header('Location: index.php'); exit; }
 
-// Ensure schema so page can function even if migration not yet run.
 if (function_exists('conversations_ensure_schema')) { conversations_ensure_schema(); }
 
 // Handle AJAX endpoints inline (simple approach)
@@ -28,7 +27,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($conversationId > 0) {
             $mid = conversation_send($conversationId, $userId, $body, $subject ?: null);
             if ($mid) {
-                // (Notification for other participant will be added in later task.)
                 echo json_encode(['ok'=>true,'conversation_id'=>$conversationId,'message_id'=>$mid]);
                 exit;
             }

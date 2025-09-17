@@ -42,3 +42,11 @@ A small PHP/MySQL application for sharing resources (items and services). This r
 2. Make the repository public on GitHub so others can clone it.
 
 If you'd like, I can prepare a ready-to-push commit (sanitizing the repo) and show the exact commands to run on your machine.
+
+## Extended Documentation
+
+For a full architectural overview, database schema summary, security notes, admin workflows, and future roadmap, see:
+
+`docs/PROJECT_DOCUMENTATION.md`
+
+Keep the README focused on quick start; update the docs file when making structural changes.
