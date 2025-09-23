@@ -2,9 +2,14 @@
 // Make About page the home. Use bootstrap for session/db.
 require_once __DIR__ . '/bootstrap.php';
 
-// If already logged in, send to role-aware dashboard
+// If already logged in, send to a role-aware home
 if (($_SERVER["REQUEST_METHOD"] ?? 'GET') === 'GET' && !empty($_SESSION['loggedin'])) {
-    header('Location: ' . site_href('dashboard.php'));
+    $role = $_SESSION['role'] ?? '';
+    if ($role === 'seeker') {
+        header('Location: ' . site_href('seeker_feed.php'));
+    } else {
+        header('Location: ' . site_href('dashboard.php'));
+    }
     exit;
 }
 
@@ -26,7 +31,12 @@ if ($_SERVER["REQUEST_METHOD"] === 'POST' && isset($_POST['username']) && isset(
                         $_SESSION["user_id"] = $user_id;
                         $_SESSION["username"] = $stored_username;
                         $_SESSION["role"] = $role;
-                        header('Location: ' . site_href('dashboard.php'));
+                        // After login, seekers go straight to the items feed; others go to dashboard
+                        if ($role === 'seeker') {
+                            header('Location: ' . site_href('seeker_feed.php'));
+                        } else {
+                            header('Location: ' . site_href('dashboard.php'));
+                        }
                         exit;
                     }
                 }

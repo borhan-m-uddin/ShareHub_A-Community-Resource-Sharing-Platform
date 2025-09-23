@@ -16,6 +16,12 @@ html[data-theme='dark'] {
     --info: #9adcf2;         /* soft cyan */
     --laser: #ff527a;
     --laser-glow: rgba(255, 82, 122, 0.55);
+    /* Sidebar vars (dark) */
+    --sb-btn-bg: #112027;         /* slate-900 */
+    --sb-btn-text: #e5e7eb;       /* gray-200 */
+    --sb-btn-hover: #0b1220;      /* deep navy */
+    --sb-btn-active: #2a8e93;     /* dark cyan */
+    --sb-panel-bg: #0f1b2d;       /* match dark surface */
 }
 html[data-theme='dark'] .site-header { background: rgba(10, 15, 30, 0.9); border-bottom-color: var(--border); }
 html[data-theme='dark'] .site-nav a { color: var(--text); }
@@ -64,9 +70,11 @@ html[data-theme='light'] {
     --primary-600: #0b7f83; /* deeper teal */
     --primary-700: #075e61; /* darkest teal */
     --info: #4ca7c9;        /* cool aqua */
+
+    --sb-btn-bg: #9bd2f9;
 }
 html[data-theme='light'] .site-header { background: #fff; border-bottom-color:#eef2f7; }
-html[data-theme='light'] .site-nav a { color: var(--text); }
+html[data-theme='light'] .site-nav a { color: var(--primary-700); }
 html[data-theme='light'] .site-nav a:hover { color: var(--primary); background: rgba(15, 163, 168, 0.08); }
 html[data-theme='light'] .form-control { background:#fff; color:#0f172a; border-color:#e6e9ef; }
 html[data-theme='light'] .wrapper, html[data-theme='light'] .card { border-color:#e6e9ef; }
@@ -86,6 +94,12 @@ html[data-theme='light'] body .messages-table tr:nth-child(even) td,
 html[data-theme='light'] body .users-table tr:nth-child(even) td { background:#fbfcfe !important; }
 html[data-theme='light'] p { color: var(--text); }
 html[data-theme='light'] span { color: #171818; }
+
+/* Ensure review list hover stays readable in light theme */
+html[data-theme='light'] .list .list-item:hover { background:#f8fafc; color: var(--text); }
+html[data-theme='light'] .list .list-item:hover p,
+html[data-theme='light'] .list .list-item:hover small,
+html[data-theme='light'] .list .list-item:hover strong { color: var(--text); }
 
 /*
     Global Theme Refresh
@@ -116,6 +130,12 @@ html[data-theme='light'] span { color: #171818; }
     /* Accent used for navbar laser sweep */
     --laser: #23d3b3;       /* mint laser */
     --laser-glow: rgba(35, 211, 179, 0.55);
+    /* Sidebar vars (light) */
+    --sb-btn-bg: #1f2937;         /* slate-800 */
+    --sb-btn-text: #ffffff;
+    --sb-btn-hover: #111827;      /* slate-900 */
+    --sb-btn-active: var(--primary-600);
+    --sb-panel-bg: var(--card);
 }
 
 /* Conversations Page (migrated from inline <style> in conversations.php) */
@@ -172,7 +192,7 @@ body {
 }
 
 .wrapper {
-    max-width: 1100px;
+    max-width: 1280px;
     margin: 24px auto;
     padding: 24px;
     background: var(--card);
@@ -460,7 +480,7 @@ html[data-theme='dark'] .auth-card .form-control { background: rgba(17,24,39,0.8
 
 /* Site header */
 .site-header { background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top:0; z-index: 50; backdrop-filter: saturate(140%) blur(6px); }
-.site-header .container { max-width:1100px; margin:0 auto; padding:8px 20px; display:flex; align-items:center; justify-content:space-between; }
+.site-header .container { max-width:1280px; margin:0 auto; padding:8px 20px; display:flex; align-items:center; justify-content:space-between; }
 .brand { display:flex; align-items:center; gap:12px; }
 .site-logo { width:280px; height:auto; display:block; }
 .brand-title { font-size:1.25rem; font-weight:800; color: var(--text); }
@@ -513,7 +533,7 @@ html[data-theme='dark'] .auth-card .form-control { background: rgba(17,24,39,0.8
 /* Slightly tighter theme toggle in header */
 .site-header #themeToggle { padding:6px 10px; }
 
-.main-content { max-width:1100px; margin:24px auto; padding:0 24px; box-sizing:border-box; }
+.main-content { max-width:1280px; margin:24px auto; padding:0 24px; box-sizing:border-box; }
 
 /* Improve wrapper spacing when header is present */
 .wrapper { margin-top:12px; }
@@ -541,9 +561,37 @@ html[data-theme='dark'] .auth-card .form-control { background: rgba(17,24,39,0.8
 /* Footer */
 footer.site-footer { color: var(--muted); }
 
+/* ================= Global Seeker Sidebar ================= */
+/* Fixed sidebar on desktop; slide-in drawer on mobile. Applied when body.has-seeker-sidebar is present. */
+.sidebar-global { position: fixed; top: var(--header-h, 64px); left: 0; height: calc(100vh - var(--header-h,64px)); width: 260px; background: var(--card); border-right: 1px solid var(--border); box-shadow: 0 10px 28px rgba(0,0,0,.08); z-index: 45; display: block; overflow-y: auto; }
+/* Use dedicated sidebar background var for better theme control */
+.sidebar-global { background: var(--sb-panel-bg); }
+/* Offset page content when sidebar is present (desktop and larger tablets) */
+@media (min-width: 901px){
+    body.has-seeker-sidebar .main-content { padding-left: 280px; }
+}
+/* Mobile: hide sidebar off-canvas by default, show overlay + FAB trigger */
+#sidebarOverlay { display:none; position:fixed; inset:0; background: rgba(0,0,0,.45); z-index: 998; }
+#sidebarFab { display:none; }
+@media (max-width: 900px){
+    .sidebar-global { width: 82%; max-width: 320px; transform: translateX(-102%); transition: transform .24s ease; z-index: 999; }
+    .sidebar-global.open { transform: translateX(0); }
+    #sidebarOverlay.open { display:block; }
+    #sidebarFab { display:block; position:fixed; left:12px; bottom:16px; z-index: 1000; }
+}
+/* Active link + count badges */
+.sidebar-global .btn.active { background: var(--primary-600); color:#fff; }
+.sidebar-global .btn.btn-default { background: var(--sb-btn-bg); color: var(--sb-btn-text); }
+.sidebar-global .btn.btn-default:hover { background: var(--sb-btn-hover); color: var(--sb-btn-text); }
+.sidebar-global .btn.btn-default.active { background: var(--sb-btn-active); color: #fff; }
+.sidebar-global .btn .count-badge { margin-left:8px; display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; font-size:12px; font-weight:800; border-radius:999px; background:#0ea5e9; color:#fff; box-shadow:0 2px 6px rgba(0,0,0,.2); }
+.sidebar-global .btn .count-badge.warn { background:#f59e0b; color:#111827; }
+html[data-theme='dark'] .sidebar-global .btn .count-badge.warn { color:#0b1220; }
+
 /* Dark mode (opt-in via OS preference) */
 @media (prefers-color-scheme: dark) {
-    :root {
+    /* Apply OS dark scheme only when no explicit theme is set on <html> */
+    html:not([data-theme]) {
         /* Mirror Jellyfish-inspired palette when OS prefers dark */
         --bg: #0a0f1e;
         --card: #0f1b2d;
@@ -557,29 +605,40 @@ footer.site-footer { color: var(--muted); }
         --primary-700: #2a8e93;
         --info: #9adcf2;
     }
-    .site-header { background: rgba(10,15,30,0.9); border-bottom-color: var(--border); }
-    .site-nav a { color:#e5e7eb; }
-    .site-nav a:hover { background:#1a2b45; color: var(--info); }
-    .form-control { background:#111827; color:#e5e7eb; border-color:#1f2937; }
-    .wrapper, .card { border-color:#1f2937; }
-    .list { border-color:#1f2937; }
-    .list .list-item { border-bottom-color:#1f2937; }
-    .list .list-item:hover { background:#111827; }
+    html:not([data-theme]) .site-header { background: rgba(10,15,30,0.9); border-bottom-color: var(--border); }
+    html:not([data-theme]) .site-nav a { color:#e5e7eb; }
+    html:not([data-theme]) .site-nav a:hover { background:#1a2b45; color: var(--info); }
+    html:not([data-theme]) .form-control { background:#111827; color:#e5e7eb; border-color:#1f2937; }
+    html:not([data-theme]) .wrapper, html:not([data-theme]) .card { border-color:#1f2937; }
+    html:not([data-theme]) .list { border-color:#1f2937; }
+    html:not([data-theme]) .list .list-item { border-bottom-color:#1f2937; }
+    /* Fix for reviews hover: only darken on OS-dark when no explicit theme is set */
+    html:not([data-theme]) .list .list-item:hover { background:#111827; }
     /* High-specificity dark table overrides for all lists */
-    body .table th, body .request-table th, body .services-table th, body .reviews-table th, body .messages-table th, body .users-table th { background:#0b1220 !important; color:#e5e7eb; }
-    body .table td, body .request-table td, body .services-table td, body .reviews-table td, body .messages-table td, body .users-table td { background:#0f172a !important; color:#e5e7eb; }
-    body .table th, body .table td,
-    body .request-table th, body .request-table td,
-    body .services-table th, body .services-table td,
-    body .reviews-table th, body .reviews-table td,
-    body .messages-table th, body .messages-table td,
-    body .users-table th, body .users-table td { border-color:#1f2937 !important; }
-    body .table tr:nth-child(even) td,
-    body .request-table tr:nth-child(even) td,
-    body .services-table tr:nth-child(even) td,
-    body .reviews-table tr:nth-child(even) td,
-    body .messages-table tr:nth-child(even) td,
-    body .users-table tr:nth-child(even) td { background:#111827 !important; }
+    html:not([data-theme]) body .table th,
+    html:not([data-theme]) body .request-table th,
+    html:not([data-theme]) body .services-table th,
+    html:not([data-theme]) body .reviews-table th,
+    html:not([data-theme]) body .messages-table th,
+    html:not([data-theme]) body .users-table th { background:#0b1220 !important; color:#e5e7eb; }
+    html:not([data-theme]) body .table td,
+    html:not([data-theme]) body .request-table td,
+    html:not([data-theme]) body .services-table td,
+    html:not([data-theme]) body .reviews-table td,
+    html:not([data-theme]) body .messages-table td,
+    html:not([data-theme]) body .users-table td { background:#0f172a !important; color:#e5e7eb; }
+    html:not([data-theme]) body .table th, html:not([data-theme]) body .table td,
+    html:not([data-theme]) body .request-table th, html:not([data-theme]) body .request-table td,
+    html:not([data-theme]) body .services-table th, html:not([data-theme]) body .services-table td,
+    html:not([data-theme]) body .reviews-table th, html:not([data-theme]) body .reviews-table td,
+    html:not([data-theme]) body .messages-table th, html:not([data-theme]) body .messages-table td,
+    html:not([data-theme]) body .users-table th, html:not([data-theme]) body .users-table td { border-color:#1f2937 !important; }
+    html:not([data-theme]) body .table tr:nth-child(even) td,
+    html:not([data-theme]) body .request-table tr:nth-child(even) td,
+    html:not([data-theme]) body .services-table tr:nth-child(even) td,
+    html:not([data-theme]) body .reviews-table tr:nth-child(even) td,
+    html:not([data-theme]) body .messages-table tr:nth-child(even) td,
+    html:not([data-theme]) body .users-table tr:nth-child(even) td { background:#111827 !important; }
     
     /* Improve text contrast on dark backgrounds */
     h1, h2, h3, h4 { color: var(--text); }
@@ -675,13 +734,7 @@ img, video { max-width: 100%; height: auto; }
     .modal .modal-card { margin: 10% 12px; width: auto; }
 }
 
-/* Tighter layout for small devices */
-@media (max-width:800px){
-    .wrapper { margin:12px; padding:16px; }
-    .dashboard-links a { flex:1 1 100%; }
-    .request-table th, .request-table td { font-size:0.92rem; padding:8px; }
-    .grid-2 { grid-template-columns: 1fr; }
-}
+/* Tighter layout for small devices - consolidated above (duplicate removed) */
 
 /* Password visibility toggle (icon button) */
 .password-field.icon-variant { position:relative; }

@@ -12,13 +12,19 @@
         </div>
     <button class="nav-toggle" aria-expanded="false" aria-controls="siteNav" aria-label="Open menu" title="Menu">☰</button>
         <nav class="site-nav" id="siteNav">
-            <?php $homeHref = !empty($_SESSION['loggedin']) ? site_href('dashboard.php') : site_href('index.php'); ?>
+            <?php 
+            $homeHref = site_href('index.php');
+            if (!empty($_SESSION['loggedin'])) {
+                $homeHref = (($_SESSION['role'] ?? '') === 'seeker') ? site_href('seeker_feed.php') : site_href('dashboard.php');
+            }
+            ?>
             <a href="<?php echo $homeHref; ?>">Home</a>
             <?php if (!empty($_SESSION['loggedin'])): ?>
                 <?php if(isset($_SESSION['role']) && $_SESSION['role']==='admin'): ?>
                     <a href="<?php echo site_href('admin/panel.php'); ?>">Admin Panel</a>
                     <a href="<?php echo site_href('admin/requests.php'); ?>">Requests</a>
                 <?php endif; ?>
+                <?php /* Removed seeker header menu icon; sidebar is controlled within seeker pages */ ?>
                 <?php
                 // Fetch a small batch of unread notifications for the bell dropdown
                 $unreadCount = 0; $unreadList = [];
@@ -74,6 +80,47 @@
         </nav>
     </div>
 </header>
+<?php if (!empty($_SESSION['loggedin']) && (($_SESSION['role'] ?? '') === 'seeker')): ?>
+    <!-- Global Seeker Sidebar: visible on all pages for seekers -->
+    <?php
+        // Determine current path for active link styling
+        $currentPath = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '');
+        // Compute counts for badges
+        $pendingReqCount = 0;
+        if (isset($conn) && isset($_SESSION['user_id'])) {
+            try {
+                if ($stc = $conn->prepare("SELECT COUNT(*) c FROM requests WHERE requester_id=? AND status='pending'")) {
+                    $uidc = (int)$_SESSION['user_id'];
+                    $stc->bind_param('i', $uidc);
+                    if ($stc->execute()) {
+                        $rc = $stc->get_result();
+                        if ($rowc = $rc->fetch_assoc()) { $pendingReqCount = (int)$rowc['c']; }
+                        if ($rc) $rc->free();
+                    }
+                    $stc->close();
+                }
+            } catch (Throwable $e) { /* ignore sidebar counter errors */ }
+        }
+    ?>
+    <aside id="seekerSidebarGlobal" class="sidebar-global">
+        <div class="card" style="margin:12px;">
+            <div class="card-body">
+                <div style="font-weight:800; margin-bottom:8px;">Navigation</div>
+                <nav class="nav-vertical" style="display:flex;flex-direction:column;gap:8px;">
+                    <a class="btn btn-default <?php echo $currentPath==='seeker_feed.php'?'active':''; ?>" <?php echo $currentPath==='seeker_feed.php'?'aria-current="page"':''; ?> href="<?php echo site_href('seeker_feed.php'); ?>">🏠 Feed</a>
+                    <a class="btn btn-default <?php echo $currentPath==='my_requests.php'?'active':''; ?>" <?php echo $currentPath==='my_requests.php'?'aria-current="page"':''; ?> href="<?php echo site_href('my_requests.php'); ?>">📝 My Requests<?php if($pendingReqCount>0): ?><span class="count-badge" title="Pending requests"><?php echo $pendingReqCount; ?></span><?php endif; ?></a>
+                    <a class="btn btn-default <?php echo $currentPath==='conversations.php'?'active':''; ?>" <?php echo $currentPath==='conversations.php'?'aria-current="page"':''; ?> href="<?php echo site_href('conversations.php'); ?>">💬 Messages</a>
+                    <a class="btn btn-default <?php echo $currentPath==='notifications.php'?'active':''; ?>" <?php echo $currentPath==='notifications.php'?'aria-current="page"':''; ?> href="<?php echo site_href('notifications.php'); ?>">🔔 Notifications<?php if(!empty($unreadCount)): ?><span class="count-badge warn" title="Unread notifications"><?php echo (int)$unreadCount; ?></span><?php endif; ?></a>
+                    <a class="btn btn-default <?php echo $currentPath==='reviews.php'?'active':''; ?>" <?php echo $currentPath==='reviews.php'?'aria-current="page"':''; ?> href="<?php echo site_href('reviews.php'); ?>">⭐ Reviews</a>
+                    <a class="btn btn-default <?php echo $currentPath==='profile.php'?'active':''; ?>" <?php echo $currentPath==='profile.php'?'aria-current="page"':''; ?> href="<?php echo site_href('profile.php'); ?>">👤 Profile</a>
+                    <a class="btn btn-default" href="<?php echo site_href('logout.php'); ?>">🚪 Logout</a>
+                </nav>
+            </div>
+        </div>
+    </aside>
+    <div id="sidebarOverlay" aria-hidden="true"></div>
+    <button id="sidebarFab" class="btn btn-outline" aria-controls="seekerSidebarGlobal" aria-expanded="false" title="Open menu">☰ Menu</button>
+<?php endif; ?>
 <main class="main-content">
 <!-- shared header end -->
 <?php if (function_exists('db_connected') && !db_connected()): ?>
@@ -180,3 +227,23 @@
     }
 })();
 </script>
+<?php if (!empty($_SESSION['loggedin']) && (($_SESSION['role'] ?? '') === 'seeker')): ?>
+<script>
+// Global sidebar behavior for seekers
+(function(){
+    // Mark body so CSS can shift layout on desktop
+    document.addEventListener('DOMContentLoaded', function(){ document.body.classList.add('has-seeker-sidebar'); });
+    var sb = document.getElementById('seekerSidebarGlobal');
+    var overlay = document.getElementById('sidebarOverlay');
+    var fab = document.getElementById('sidebarFab');
+    if(!sb || !overlay || !fab) return;
+    function isMobile(){ return window.matchMedia('(max-width: 900px)').matches; }
+    function openSb(){ if (isMobile()) { sb.classList.add('open'); overlay.classList.add('open'); fab.setAttribute('aria-expanded','true'); } }
+    function closeSb(){ sb.classList.remove('open'); overlay.classList.remove('open'); fab.setAttribute('aria-expanded','false'); }
+    fab.addEventListener('click', function(){ if (overlay.classList.contains('open')) { closeSb(); } else { openSb(); } });
+    overlay.addEventListener('click', closeSb);
+    document.addEventListener('keydown', function(ev){ if(ev.key === 'Escape') closeSb(); });
+})();
+</script>
+<?php endif; ?>
+<!-- Removed global header sidebar toggle script -->

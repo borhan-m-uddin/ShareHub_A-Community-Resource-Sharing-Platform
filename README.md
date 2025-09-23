@@ -1,52 +1,45 @@
-# Community Sharing (PHP)
 
-A small PHP/MySQL application for sharing resources (items and services). This repository is a sanitized version suitable for sharing.
+## Features
 
-## What to include before running
-- Copy `config.sample.php` to `config.php` and fill in your database credentials.
-- Import the `setup_database.sql` file (if present) or run the provided SQL to create the schema.
+- User accounts with roles: Admin, Giver, Seeker
+- Email verification and OTP-based password reset
+- Items: create, edit, delete; categories, condition, availability; image upload
+- Services: create, edit, delete; categories, location, availability
+- Requests lifecycle: pending → approved/rejected → completed
+- Messaging: conversation-based chat between users
+- Notifications: in-app with read/unread states
+- Admin panel: manage users, items, services, requests, reviews, and view stats
+- Security: prepared statements, CSRF protection, password hashing
+- Email via PHPMailer with graceful fallbacks and logging
 
-## Requirements
-- PHP 8+ with mysqli
-- MySQL / MariaDB
+## How to Use
 
-## Quick start (local)
-1. Copy the sample config and update credentials:
+Seeker
+1) Register and verify your email
+2) Browse items/services and submit a request with a short message
+3) Watch notifications for status updates; chat with the provider
+4) After fulfillment, mark complete (admin-assisted) and optionally leave a review
 
-   copy config.sample.php config.php
+Giver
+1) Register and verify your email
+2) Post items/services with clear descriptions and availability
+3) Respond to requests and coordinate via messaging
+4) Update availability or remove listings when no longer available
 
-2. Import the database schema (example):
+Admin
+1) Log in and open `admin/panel.php`
+2) Manage users (roles/status), items, services, requests, and reviews
+3) Approve/reject/complete requests; monitor platform stats and audit logs
 
-   mysql -u root -p community_sharing < setup_database.sql
+### Seeker Feed
+- After login, seekers land on a unified feed at `seeker_feed.php` showing all available items and services.
+- Left sidebar provides quick navigation to Feed, My Requests, Messages, Notifications, and Profile.
 
-3. Start the PHP development server:
+## Sample Data
 
-   php -S localhost:8000
+An example database schema with a small data set is available at `docs/community_sharing.sql`.
 
-4. Open your browser at `http://localhost:8000`.
-
-## Secure sharing tips
-- Do not commit `config.php` with real credentials.
-- Add demo users and test data to `setup_database.sql` if you want a ready-to-run demo.
-
-## How to publish to GitHub (from repo root)
-1. Initialize git and push to a new remote repository you create on GitHub:
-
-   git init
-   git add .
-   git commit -m "Initial sanitized import"
-   git branch -M main
-   git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
-   git push -u origin main
-
-2. Make the repository public on GitHub so others can clone it.
-
-If you'd like, I can prepare a ready-to-push commit (sanitizing the repo) and show the exact commands to run on your machine.
-
-## Extended Documentation
-
-For a full architectural overview, database schema summary, security notes, admin workflows, and future roadmap, see:
-
-`docs/PROJECT_DOCUMENTATION.md`
-
-Keep the README focused on quick start; update the docs file when making structural changes.
+To import locally (optional):
+- Create a database named `community_sharing` in your MySQL/MariaDB instance.
+- Import the SQL file via your preferred client (phpMyAdmin, Adminer, or CLI).
+- Update your local `config.php` credentials if needed.

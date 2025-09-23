@@ -6,6 +6,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     exit;
 }
 
+// Redirect seekers to the unified feed, dashboard is for givers/admin
+if (($_SESSION['role'] ?? '') === 'seeker') {
+    header('Location: ' . site_href('seeker_feed.php'));
+    exit;
+}
+
 // Lightweight KPIs for dashboard (no admin actions here)
 $kpis = [
     'total_items' => 0,
@@ -154,10 +160,10 @@ if (isset($conn) && $conn instanceof mysqli) {
             <?php endif; ?>
 
             <?php if (isset($_SESSION["role"]) && $_SESSION["role"] === "seeker"): ?>
-                <a class="card" href="<?php echo site_href('view_items.php'); ?>" style="text-decoration:none;">
+                <a class="card" href="<?php echo site_href('seeker_feed.php?tab=items'); ?>" style="text-decoration:none;">
                     <div class="card-body"><b>🛍️ Browse Items</b><p class="muted" style="margin-top:6px;">Find items shared by neighbors</p></div>
                 </a>
-                <a class="card" href="<?php echo site_href('view_services.php'); ?>" style="text-decoration:none;">
+                <a class="card" href="<?php echo site_href('seeker_feed.php?tab=services'); ?>" style="text-decoration:none;">
                     <div class="card-body"><b>⚙️ Browse Services</b><p class="muted" style="margin-top:6px;">Discover help and expertise</p></div>
                 </a>
                 <a class="card" href="<?php echo site_href('my_requests.php'); ?>" style="text-decoration:none;">
@@ -215,7 +221,7 @@ if (isset($conn) && $conn instanceof mysqli) {
                 <?php else: ?>
                     <div class="muted">No items available right now.</div>
                 <?php endif; ?>
-                <div style="margin-top:10px; display:flex; gap:8px;"><a href="<?php echo site_href('view_items.php'); ?>" class="btn btn-default">Browse Items →</a></div>
+                <div style="margin-top:10px; display:flex; gap:8px;"><a href="<?php echo site_href('seeker_feed.php?tab=items'); ?>" class="btn btn-default">Browse Items →</a></div>
             </div></div>
             <div class="card" style="margin-top:16px;"><div class="card-body">
                 <div class="card-header" style="border-bottom:0; padding:0 0 8px 0; font-weight:800;">⚙️ Latest Services</div>
@@ -231,7 +237,7 @@ if (isset($conn) && $conn instanceof mysqli) {
                 <?php else: ?>
                     <div class="muted">No services available right now.</div>
                 <?php endif; ?>
-                <div style="margin-top:10px; display:flex; gap:8px;"><a href="<?php echo site_href('view_services.php'); ?>" class="btn btn-default">Browse Services →</a></div>
+                <div style="margin-top:10px; display:flex; gap:8px;"><a href="<?php echo site_href('seeker_feed.php?tab=services'); ?>" class="btn btn-default">Browse Services →</a></div>
             </div></div>
             <div class="card" style="margin-top:16px;"><div class="card-body">
                 <div class="card-header" style="border-bottom:0; padding:0 0 8px 0; font-weight:800;">📝 Your Recent Requests</div>

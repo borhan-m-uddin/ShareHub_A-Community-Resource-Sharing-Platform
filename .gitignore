@@ -28,6 +28,7 @@ inspect_users.php
 # Database dumps (if you create one locally) — keep only local dumps folder ignored
 # Ignore the dumps folder so we can keep a local copy but not commit it
 dumps/*.sql
+includes/*.sql
 
 # Logs
 logs/

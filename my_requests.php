@@ -40,9 +40,9 @@ if($stmt = $conn->prepare($sql)){
         <h2>📋 My Requests</h2>
         <p>View the status of your requests for items and services.</p>
         <p>
-            <a href="dashboard.php" class="btn btn-default">← Back to Dashboard</a>
-            <a href="view_items.php" class="btn btn-default">Browse Items</a>
-            <a href="view_services.php" class="btn btn-default">Browse Services</a>
+            <a href="<?php echo site_href('seeker_feed.php'); ?>" class="btn btn-default">← Back to Feed</a>
+            <a href="<?php echo site_href('seeker_feed.php?tab=items'); ?>" class="btn btn-default">Browse Items</a>
+            <a href="<?php echo site_href('seeker_feed.php?tab=services'); ?>" class="btn btn-default">Browse Services</a>
         </p>
 
         <?php if (!empty($requests)): ?>
@@ -71,9 +71,16 @@ if($stmt = $conn->prepare($sql)){
                             <td><?php echo htmlspecialchars($request["giver_username"] ?: 'Unknown'); ?></td>
                             <td class="status-<?php echo strtolower($request["status"] ?: 'pending'); ?>">
                                 <?php 
-                                $status_icons = ['pending' => '⏳', 'approved' => '✅', 'declined' => '❌', 'completed' => '🎯'];
-                                $status = $request["status"] ?: 'pending';
-                                echo $status_icons[$status] . ' ' . htmlspecialchars(ucfirst($status)); 
+                                // Align with DB enum: pending, approved, rejected, completed
+                                $status_icons = [
+                                    'pending' => '⏳',
+                                    'approved' => '✅',
+                                    'rejected' => '❌',
+                                    'completed' => '🎯'
+                                ];
+                                $status = strtolower($request["status"] ?: 'pending');
+                                $label = ucfirst($status);
+                                echo ($status_icons[$status] ?? 'ℹ️') . ' ' . htmlspecialchars($label);
                                 ?>
                             </td>
                             <td><?php echo date('M j, Y g:i A', strtotime($request["request_date"])); ?></td>
@@ -87,8 +94,8 @@ if($stmt = $conn->prepare($sql)){
                 <h4>📭 No Requests Yet</h4>
                 <p>You haven't made any requests yet.</p>
                 <p>
-            <a href="<?php echo site_href('view_items.php'); ?>" class="btn btn-default">Browse Items</a>
-            <a href="<?php echo site_href('view_services.php'); ?>" class="btn btn-default">Browse Services</a>
+            <a href="<?php echo site_href('seeker_feed.php?tab=items'); ?>" class="btn btn-default">Browse Items</a>
+            <a href="<?php echo site_href('seeker_feed.php?tab=services'); ?>" class="btn btn-default">Browse Services</a>
                 </p>
             </div>
         <?php endif; ?>

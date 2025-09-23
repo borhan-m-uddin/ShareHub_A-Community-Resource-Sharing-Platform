@@ -120,9 +120,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["request_id"], $_POST[
                             <td><a href="mailto:<?php echo htmlspecialchars($request["seeker_email"] ?: ''); ?>"><?php echo htmlspecialchars($request["seeker_email"] ?: 'No email'); ?></a></td>
                             <td class="status-<?php echo strtolower($request["status"] ?: 'pending'); ?>">
                                 <?php 
-                                $status_icons = ['pending' => '⏳', 'approved' => '✅', 'declined' => '❌', 'completed' => '🎯'];
-                                $status = $request["status"] ?: 'pending';
-                                echo $status_icons[$status] . ' ' . htmlspecialchars(ucfirst($status)); 
+                                $status_icons = ['pending' => '⏳', 'approved' => '✅', 'rejected' => '❌', 'completed' => '🎯'];
+                                $status = strtolower($request["status"] ?: 'pending');
+                                echo ($status_icons[$status] ?? 'ℹ️') . ' ' . htmlspecialchars(ucfirst($status));
                                 ?>
                             </td>
                             <td><?php echo date('M j, Y g:i A', strtotime($request["request_date"])); ?></td>

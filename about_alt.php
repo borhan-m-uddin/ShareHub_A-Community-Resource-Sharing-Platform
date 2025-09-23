@@ -534,11 +534,11 @@ $latest_serv_t    = $latest_services[0]['title'] ?? 'Tutoring';
                     <div class="ctas">
                         <?php if (!empty($_SESSION['loggedin'])): ?>
                             <a href="<?php echo e('dashboard.php'); ?>" class="btn btn-primary">Go to Dashboard</a>
-                            <a href="<?php echo e('view_items.php'); ?>" class="btn btn-default">Browse Items</a>
-                            <a href="<?php echo e('view_services.php'); ?>" class="btn btn-default">Browse Services</a>
+                            <a href="<?php echo e('seeker_feed.php?tab=items'); ?>" class="btn btn-default">Browse Items</a>
+                            <a href="<?php echo e('seeker_feed.php?tab=services'); ?>" class="btn btn-default">Browse Services</a>
                         <?php else: ?>
                             <a href="<?php echo e('register.php'); ?>" class="btn btn-primary">Join ShareHub</a>
-                            <a href="<?php echo e('view_items.php'); ?>" class="btn btn-default">Explore Items</a>
+                            <a href="<?php echo e('seeker_feed.php?tab=items'); ?>" class="btn btn-default">Explore Items</a>
                         <?php endif; ?>
                     </div>
 
@@ -603,7 +603,7 @@ $latest_serv_t    = $latest_services[0]['title'] ?? 'Tutoring';
                     <li>Real-time notifications</li>
                     <li>Giver approvals</li>
                 </ul>
-                <a class="more" href="request_item.php">Create a request →</a>
+                <a class="more" href="seeker_feed.php?tab=items">Create a request →</a>
             </div>
             <div class="tile">
                 <div class="icon" aria-hidden="true">
@@ -684,9 +684,9 @@ $latest_serv_t    = $latest_services[0]['title'] ?? 'Tutoring';
         </section>
 
         <section class="quick-links">
-            <div class="q"><a href="view_items.php">Browse all items →</a></div>
-            <div class="q"><a href="view_services.php">Browse all services →</a></div>
-            <div class="q"><a href="request_item.php">Create a request →</a></div>
+            <div class="q"><a href="seeker_feed.php?tab=items">Browse all items →</a></div>
+            <div class="q"><a href="seeker_feed.php?tab=services">Browse all services →</a></div>
+            <div class="q"><a href="seeker_feed.php?tab=items">Create a request →</a></div>
             <div class="q"><a href="reviews.php">Read reviews →</a></div>
         </section>
 
