@@ -1,0 +1,14 @@
+{
+  "name": "borhan-m-uddin/sharehub",
+  "description": "ShareHub: A community sharing platform",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.1",
+    "phpmailer/phpmailer": "^6.9"
+  },
+  "autoload": {},
+  "config": {
+    "sort-packages": true
+  }
+}
