@@ -1,0 +1,12 @@
+# Basic front controller rewrite (Apache)
+# Note: Only active when deployed on Apache; ignored on built-in PHP server
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+# Skip existing files/directories
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+# Route everything to public/index.php
+RewriteRule ^ index.php [L]
+</IfModule>

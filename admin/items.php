@@ -150,12 +150,12 @@ foreach ($all_items as $it) {
 <body>
     <?php render_header(); ?>
     <div class="wrapper">
-        <h2>📦 Admin - Manage All Items</h2>
-        <p>Administrative overview of all items in the system.</p>
-        <p>
+        <div class="page-top-actions">
             <a href="<?php echo site_href('admin/panel.php'); ?>" class="btn btn-primary">← Back to Admin Panel</a>
             <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary">Dashboard</a>
-        </p>
+        </div>
+        <h2>📦 Admin - Manage All Items</h2>
+        <p>Administrative overview of all items in the system.</p>
 
         <form method="get" class="filter-bar" style="margin-bottom:12px;">
             <input class="form-control" type="text" name="q" value="<?php echo htmlspecialchars($q); ?>" placeholder="Search title/desc/username or ID" />
@@ -166,7 +166,7 @@ foreach ($all_items as $it) {
             <input class="form-control" type="text" name="category" value="<?php echo htmlspecialchars($category); ?>" placeholder="Category" />
             <input class="form-control" type="date" name="from" value="<?php echo htmlspecialchars($from); ?>" />
             <input class="form-control" type="date" name="to" value="<?php echo htmlspecialchars($to); ?>" />
-            <button class="btn btn-default" type="submit">Filter</button>
+            <button class="btn btn-primary" type="submit">Filter</button>
         </form>
 
         <div class="muted" style="margin-bottom:8px;">Showing <?php echo count($all_items); ?> of <?php echo (int)$total; ?><?php if ($total > $perPage): ?> | Page <?php echo $page; ?><?php endif; ?></div>

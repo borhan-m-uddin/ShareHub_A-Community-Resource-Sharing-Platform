@@ -143,6 +143,9 @@ if ($st = $conn->prepare("SELECT r.request_id, r.status, u1.username as requeste
     <?php render_header(); ?>
 
     <div class="wrapper">
+        <div class="page-top-actions">
+            <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
         <div class="card">
             <div class="card-body" style="text-align:center;">
                 <h2>🛠️ Admin Control Panel</h2>
@@ -242,6 +245,6 @@ if ($st = $conn->prepare("SELECT r.request_id, r.status, u1.username as requeste
             </div>
         </div>
 
-        <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary" style="margin-top:16px;">← Back to Dashboard</a>
+        
     </div>
     <?php render_footer(); ?>

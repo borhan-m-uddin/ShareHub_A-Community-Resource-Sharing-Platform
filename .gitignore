@@ -1,3 +1,57 @@
+# General
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Node (if any tooling is used)
+node_modules/
+
+# Composer dependencies
+# Recommended: do NOT commit vendor/ when your server can run Composer.
+# If your server cannot run Composer, remove this rule and commit vendor/.
+vendor/
+
+# PHP sessions / temp / caches
+sessions/
+tmp/
+cache/
+
+# Secrets and local config (never commit real secrets)
+config.php
+.env
+
+# Storage: ignore everything by default, keep placeholders and sample config
+storage/*
+!storage/.gitkeep
+!storage/settings.sample.json
+
+# Settings file with secrets (ignored)
+storage/settings.json
+
+# Logs
+logs/
+*.log
+storage/*.log
+
+# Uploads: ignore content; keep placeholder so folder exists
+uploads/*
+!uploads/.gitkeep
+
+# Local debug/test scripts (do not commit)
+debug_*.php
+*_fixed.php
+*_new.php
+prepare_for_github.php
+create_test_giver.php
+inspect_users.php
+
+# SQL dumps created locally (keep docs/ and migrations/ tracked)
+dumps/
+*.sql
+includes/*.sql
 # Node / Composer
 node_modules/
 vendor/
@@ -33,3 +87,4 @@ includes/*.sql
 # Logs
 logs/
 *.log
+\n# Uploads (ignore content except placeholder)\n/uploads/*\n!/uploads/.gitkeep\n\n# Storage logs\n/storage/mail.log\n*** End Patch

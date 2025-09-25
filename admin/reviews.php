@@ -110,11 +110,11 @@ if ($st = $conn->prepare($sqlc)) {
 <body>
     <?php render_header(); ?>
     <div class="wrapper">
-        <h2>⭐ Admin - Manage Reviews</h2>
-        <p>
+        <div class="page-top-actions">
             <a class="btn btn-primary" href="<?php echo site_href('admin/panel.php'); ?>">← Back to Admin Panel</a>
             <a class="btn btn-secondary" href="<?php echo site_href('dashboard.php'); ?>">Dashboard</a>
-        </p>
+        </div>
+        <h2>⭐ Admin - Manage Reviews</h2>
 
         <form method="get" class="filter-bar" style="margin-bottom:12px;">
             <input class="form-control" type="text" name="q" value="<?php echo htmlspecialchars($q); ?>" placeholder="Search reviewer/reviewed/comment or ID" />

@@ -257,11 +257,11 @@ if ($st = $conn->prepare($sqlc)) {
 <body>
     <?php render_header(); ?>
     <div class="wrapper">
-        <h2>👥 Admin - Manage Users</h2>
-        <p>
+        <div class="page-top-actions">
             <a href="<?php echo site_href('admin/panel.php'); ?>" class="btn btn-primary">← Back to Admin Panel</a>
             <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary">Dashboard</a>
-        </p>
+        </div>
+        <h2>👥 Admin - Manage Users</h2>
 
         <form method="get" class="filter-bar" style="margin-bottom:12px;">
             <input class="form-control" type="text" name="q" value="<?php echo htmlspecialchars($q); ?>" placeholder="Search by username/email/ID" />

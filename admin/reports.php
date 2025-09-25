@@ -478,11 +478,11 @@ if ($stmt = $conn->prepare($sql)) {
 <body>
     <?php render_header(); ?>
     <div class="wrapper">
-        <h2>📊 Admin - Reports & Analytics</h2>
-        <p>
+        <div class="page-top-actions">
             <a class="btn btn-primary" href="<?php echo site_href('admin/panel.php'); ?>">← Back to Admin Panel</a>
             <a class="btn btn-secondary" href="<?php echo site_href('dashboard.php'); ?>">Dashboard</a>
-        </p>
+        </div>
+        <h2>📊 Admin - Reports & Analytics</h2>
 
         <!-- Filters -->
         <div class="card" style="margin-bottom:12px;">
@@ -514,7 +514,7 @@ if ($stmt = $conn->prepare($sql)) {
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div>
+                    <div class="form-group">
                         <button type="submit" class="btn btn-primary">Apply Filters</button>
                         <a href="<?php echo site_href('admin/reports.php'); ?>" class="btn btn-default">Reset</a>
                     </div>

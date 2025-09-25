@@ -171,11 +171,11 @@ if ($stmtc = $conn->prepare($sqlCount)) {
 <body>
     <?php render_header(); ?>
     <div class="wrapper">
-        <h2>📋 Admin - Manage Requests</h2>
-        <p>
+        <div class="page-top-actions">
             <a href="<?php echo site_href('admin/panel.php'); ?>" class="btn btn-primary">← Back to Admin Panel</a>
             <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary">Dashboard</a>
-        </p>
+        </div>
+        <h2>📋 Admin - Manage Requests</h2>
 
         <?php if ($msg = flash_get('success')): ?><div class="alert alert-success"><?php echo htmlspecialchars($msg); ?></div><?php endif; ?>
         <?php if ($msg = flash_get('error')): ?><div class="alert alert-danger"><?php echo htmlspecialchars($msg); ?></div><?php endif; ?>

@@ -43,3 +43,21 @@ To import locally (optional):
 - Create a database named `community_sharing` in your MySQL/MariaDB instance.
 - Import the SQL file via your preferred client (phpMyAdmin, Adminer, or CLI).
 - Update your local `config.php` credentials if needed.
+
+## Run locally (dev server) and clean URLs
+
+This repo uses a front-controller router at `public/index.php` for clean URLs like `/login` instead of `login.php`.
+
+- PHP built-in server (Windows, PowerShell or cmd):
+	- Start the server with `public` as the docroot and the router file:
+		- PowerShell:
+			- `php -S 127.0.0.1:8000 -t "public" "public/index.php"`
+		- cmd.exe:
+			- `php -S 127.0.0.1:8000 -t public public/index.php`
+	- Visit http://127.0.0.1:8000
+
+- Apache (or hosting with .htaccess support):
+	- `public/.htaccess` rewrites all non-existing paths to `public/index.php` while serving existing files directly.
+	- Make sure your VirtualHost/DocumentRoot points to the `public/` directory.
+
+Direct links to legacy pages like `/login.php` still work for backward compatibility.
