@@ -11,7 +11,7 @@ if (!function_exists('require_login')) {
     function require_login(): void
     {
         if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || !current_user_id()) {
-            header('Location: ' . site_href('index.php'));
+            header('Location: ' . site_href('pages/index.php'));
             exit;
         }
     }
@@ -20,6 +20,6 @@ if (!function_exists('require_admin')) {
     function require_admin(): void
     {
         require_login();
-        if (!is_admin()) { header('Location: ' . site_href('index.php')); exit; }
+        if (!is_admin()) { header('Location: ' . site_href('pages/index.php')); exit; }
     }
 }

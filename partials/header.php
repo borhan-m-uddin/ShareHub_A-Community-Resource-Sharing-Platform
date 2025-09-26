@@ -61,6 +61,23 @@
 		</nav>
 	</div>
 </header>
+<script>
+// Ensure favicon/logo shows in the browser tab even on pages that don't include head_meta
+(function(){
+	try {
+		var head = document.head || document.getElementsByTagName('head')[0];
+		if (!head) return;
+		var hasIcon = head.querySelector('link[rel*="icon"]');
+		if (!hasIcon) {
+			var l = document.createElement('link');
+			l.setAttribute('rel','icon');
+			l.setAttribute('type','image/svg+xml');
+			l.setAttribute('href','<?php echo asset_url('assets/brand/logo-badge.svg'); ?>');
+			head.appendChild(l);
+		}
+	} catch(e){}
+})();
+</script>
 <?php if (!empty($_SESSION['loggedin']) && (($_SESSION['role'] ?? '') === 'seeker')): ?>
 	<?php
 		$currentPath = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '');
@@ -85,13 +102,13 @@
 			<div class="card-body">
 				<div style="font-weight:800; margin-bottom:8px;">Navigation</div>
 				<nav class="nav-vertical" style="display:flex;flex-direction:column;gap:8px;">
-					<a class="btn btn-default <?php echo $currentPath==='seeker_feed.php'?'active':''; ?>" <?php echo $currentPath==='seeker_feed.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/seeker_feed.php'); ?>">🏠 Feed</a>
-					<a class="btn btn-default <?php echo $currentPath==='my_requests.php'?'active':''; ?>" <?php echo $currentPath==='my_requests.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/my_requests.php'); ?>">📝 My Requests<?php if($pendingReqCount>0): ?><span class="count-badge" title="Pending requests"><?php echo $pendingReqCount; ?></span><?php endif; ?></a>
-					<a class="btn btn-default <?php echo $currentPath==='conversations.php'?'active':''; ?>" <?php echo $currentPath==='conversations.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/conversations.php'); ?>">💬 Messages</a>
-					<a class="btn btn-default <?php echo $currentPath==='notifications.php'?'active':''; ?>" <?php echo $currentPath==='notifications.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/notifications.php'); ?>">🔔 Notifications<?php if(!empty($unreadCount)): ?><span class="count-badge warn" title="Unread notifications"><?php echo (int)$unreadCount; ?></span><?php endif; ?></a>
-					<a class="btn btn-default <?php echo $currentPath==='reviews.php'?'active':''; ?>" <?php echo $currentPath==='reviews.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/reviews.php'); ?>">⭐ Reviews</a>
-					<a class="btn btn-default <?php echo $currentPath==='profile.php'?'active':''; ?>" <?php echo $currentPath==='profile.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/profile.php'); ?>">👤 Profile</a>
-					<a class="btn btn-default" href="<?php echo site_href('pages/logout.php'); ?>">🚪 Logout</a>
+					<a class="btn btn-primary <?php echo $currentPath==='seeker_feed.php'?'active':''; ?>" <?php echo $currentPath==='seeker_feed.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/seeker_feed.php'); ?>">🏠 Feed</a>
+					<a class="btn btn-primary <?php echo $currentPath==='my_requests.php'?'active':''; ?>" <?php echo $currentPath==='my_requests.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/my_requests.php'); ?>">📝 My Requests<?php if($pendingReqCount>0): ?><span class="count-badge" title="Pending requests"><?php echo $pendingReqCount; ?></span><?php endif; ?></a>
+					<a class="btn btn-primary <?php echo $currentPath==='conversations.php'?'active':''; ?>" <?php echo $currentPath==='conversations.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/conversations.php'); ?>">💬 Messages</a>
+					<a class="btn btn-primary <?php echo $currentPath==='notifications.php'?'active':''; ?>" <?php echo $currentPath==='notifications.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/notifications.php'); ?>">🔔 Notifications<?php if(!empty($unreadCount)): ?><span class="count-badge warn" title="Unread notifications"><?php echo (int)$unreadCount; ?></span><?php endif; ?></a>
+					<a class="btn btn-primary <?php echo $currentPath==='reviews.php'?'active':''; ?>" <?php echo $currentPath==='reviews.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/reviews.php'); ?>">⭐ Reviews</a>
+					<a class="btn btn-primary <?php echo $currentPath==='profile.php'?'active':''; ?>" <?php echo $currentPath==='profile.php'?'aria-current="page"':''; ?> href="<?php echo site_href('pages/profile.php'); ?>">👤 Profile</a>
+					<a class="btn btn-primary" href="<?php echo site_href('pages/logout.php'); ?>">🚪 Logout</a>
 				</nav>
 			</div>
 		</div>
@@ -237,5 +254,49 @@
 	});
 	markAllBtn && markAllBtn.addEventListener('click', function(ev){ ev.preventDefault(); markAll(); });
 
+})();
+// Mobile top navigation toggle
+(function(){
+	var toggle = document.querySelector('.nav-toggle');
+	var nav = document.getElementById('siteNav');
+	if(!toggle || !nav) return;
+	function setOpen(open){
+		nav.classList.toggle('open', !!open);
+		toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+	}
+	toggle.addEventListener('click', function(e){
+		e.preventDefault();
+		setOpen(!nav.classList.contains('open'));
+	});
+	// Close when clicking outside on small screens
+	document.addEventListener('click', function(ev){
+		if (!window.matchMedia('(max-width: 900px)').matches) return;
+		if (nav.contains(ev.target)) return;
+		if (ev.target === toggle || toggle.contains(ev.target)) return;
+		setOpen(false);
+	});
+	// Close on ESC
+	document.addEventListener('keydown', function(ev){ if(ev.key === 'Escape') setOpen(false); });
+	// Close when resizing up to desktop
+	window.addEventListener('resize', function(){ if(!window.matchMedia('(max-width: 900px)').matches) setOpen(false); });
+})();
+// Seeker off-canvas sidebar toggle (mobile)
+(function(){
+	var sidebar = document.getElementById('seekerSidebarGlobal');
+	var overlay = document.getElementById('sidebarOverlay');
+	var fab = document.getElementById('sidebarFab');
+	if(!sidebar || !overlay || !fab) return;
+	function setOpen(open){
+		var isOpen = !!open;
+		sidebar.classList.toggle('open', isOpen);
+		overlay.classList.toggle('open', isOpen);
+		fab.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+		// prevent body from scrolling when drawer open
+		document.body.style.overflow = isOpen ? 'hidden' : '';
+	}
+	fab.addEventListener('click', function(e){ e.preventDefault(); setOpen(!sidebar.classList.contains('open')); });
+	overlay.addEventListener('click', function(){ setOpen(false); });
+	document.addEventListener('keydown', function(ev){ if(ev.key === 'Escape') setOpen(false); });
+	window.addEventListener('resize', function(){ if(!window.matchMedia('(max-width: 900px)').matches) setOpen(false); });
 })();
 </script>

@@ -70,6 +70,7 @@ if ($debug && !$ok) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Email Verification</title>
 <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
@@ -85,7 +86,7 @@ if ($debug && !$ok) {
     <p><a class="btn" href="<?php echo site_href('pages/login.php'); ?>">Go to Login</a></p>
     <?php else: ?>
         <p>
-            <a class="btn" href="<?php echo site_href('verify_notice.php?uid=' . htmlspecialchars((string)$uid, ENT_QUOTES, 'UTF-8')); ?>">Request new link</a>
+            <a class="btn" href="<?php echo site_href('pages/verify_notice.php?uid=' . htmlspecialchars((string)$uid, ENT_QUOTES, 'UTF-8')); ?>">Request new link</a>
         </p>
     <?php endif; ?>
 </div>

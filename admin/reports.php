@@ -448,8 +448,15 @@ if ($stmt = $conn->prepare($sql)) {
     $stmt->close();
 }
 ?>
-<link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
-<style>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Reports & Analytics</title>
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
+    <style>
     .stat-row {
         display: flex;
         justify-content: space-between;
@@ -472,7 +479,7 @@ if ($stmt = $conn->prepare($sql)) {
         height: 100%;
         background: var(--warning);
     }
-</style>
+    </style>
 </head>
 
 <body>

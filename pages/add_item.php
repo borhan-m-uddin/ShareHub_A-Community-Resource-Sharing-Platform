@@ -10,10 +10,25 @@ $condition_status = 'good';
 $title_err = $description_err = $category_err = $pickup_location_err = $image_err = '';
 $saved_image_url = null;
 
+// Generate a one-time form token to prevent accidental double submissions
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    try { $_SESSION['form_token_add_item'] = bin2hex(random_bytes(16)); }
+    catch (Throwable $e) { $_SESSION['form_token_add_item'] = bin2hex(random_bytes(8)); }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify($_POST['csrf_token'] ?? null)) {
         $image_err = 'Invalid request. Please refresh.';
     } else {
+        // Enforce one-time form token
+        $sent_form_token = (string)($_POST['form_token'] ?? '');
+        $stored_form_token = (string)($_SESSION['form_token_add_item'] ?? '');
+        // Always consume the token so refresh won't reuse it
+        unset($_SESSION['form_token_add_item']);
+        if ($sent_form_token === '' || $stored_form_token === '' || !hash_equals($stored_form_token, $sent_form_token)) {
+            $image_err = 'Duplicate or invalid submission detected. Please try again.';
+        }
+
         $title = trim((string)($_POST['title'] ?? ''));
         if ($title === '') $title_err = 'Please enter a title for the item.'; elseif (mb_strlen($title) > 150) $title_err = 'Title must be 150 characters or less.';
         $description = trim((string)($_POST['description'] ?? ''));
@@ -30,12 +45,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $res = upload_image_secure($_FILES['image'], 'uploads/items', 2_000_000, 1600, 1200);
             if ($res['ok']) { $saved_image_url = $res['pathRel']; } else { $image_err = $res['error']; }
         }
-        if ($title_err === '' && $description_err === '' && $category_err === '' && $pickup_location_err === '' && $image_err === '') {
+        // Server-side duplicate guard: if same user submits identical data within a short window, skip insert
+        $uid = (int)($_SESSION['user_id'] ?? 0);
+        $payload_hash = hash('sha256', $uid . '|' . $title . '|' . $description . '|' . $category . '|' . $condition_status . '|' . $pickup_location . '|' . (string)$saved_image_url);
+        $now = time();
+        $last_hash = $_SESSION['last_add_item_hash'] ?? '';
+        $last_time = (int)($_SESSION['last_add_item_time'] ?? 0);
+        $withinWindow = ($now - $last_time) <= 15; // 15-second window
+        $isDuplicatePayload = ($payload_hash !== '' && $payload_hash === $last_hash && $withinWindow);
+
+        if ($title_err === '' && $description_err === '' && $category_err === '' && $pickup_location_err === '' && $image_err === '' && !$isDuplicatePayload) {
             $sql = 'INSERT INTO items (giver_id,title,description,category,condition_status,pickup_location,image_url) VALUES (?,?,?,?,?,?,?)';
             if ($stmt = $conn->prepare($sql)) {
                 $stmt->bind_param('issssss', $uid,$title,$description,$category,$condition_status,$pickup_location,$saved_image_url);
-                $uid = (int)$_SESSION['user_id'];
                 if ($stmt->execute()) {
+                    // Record payload to prevent immediate duplicates on accidental resubmits
+                    $_SESSION['last_add_item_hash'] = $payload_hash;
+                    $_SESSION['last_add_item_time'] = $now;
                     header('Location: ' . site_href('pages/dashboard.php'));
                     exit;
                 } else {
@@ -45,6 +71,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $image_err = 'Database error.';
             }
+        } elseif ($isDuplicatePayload) {
+            // For duplicate within the window, just redirect to avoid inserting again
+            header('Location: ' . site_href('pages/dashboard.php'));
+            exit;
         }
     }
 }
@@ -52,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><title>Add New Item</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Add New Item</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
 <body>
@@ -63,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <p>Please fill this form to add a new item for sharing.</p>
     <form method="post" enctype="multipart/form-data">
         <?php echo csrf_field(); ?>
+        <input type="hidden" name="form_token" value="<?php echo e($_SESSION['form_token_add_item'] ?? ''); ?>" />
         <div class="form-group <?php echo $title_err ? 'has-error':''; ?>">
             <label>Title</label>
             <input type="text" name="title" class="form-control" value="<?php echo htmlspecialchars($title); ?>">
@@ -102,11 +133,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <small class="help-block" style="color:#6b7280">Accepted: JPG, PNG, GIF, WEBP. Max 2MB.</small>
             <span class="help-block"><?php echo htmlspecialchars($image_err); ?></span>
         </div>
-        <div class="form-group">
-            <button type="submit" class="btn btn-primary">Add Item</button>
+                <div class="form-group">
+                        <button type="submit" class="btn btn-primary" id="btnAddItem">Add Item</button>
             <a href="<?php echo site_href('pages/dashboard.php'); ?>" class="btn btn-default">Cancel</a>
         </div>
     </form>
+        <script>
+            (function(){
+                var f=document.querySelector('form');
+                var btn=document.getElementById('btnAddItem');
+                if(!f||!btn) return;
+                f.addEventListener('submit', function(){ btn.disabled=true; btn.textContent='Saving…'; });
+            })();
+        </script>
 </div>
 <?php render_footer(); ?>
 </body>

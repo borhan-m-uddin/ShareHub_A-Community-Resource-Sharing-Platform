@@ -117,18 +117,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (!$username_err && !$email_err && !$first_name_err && !$last_name_err && !$phone_err && !$address_err) {
         if (function_exists('db_connected') && db_connected()) {
-            $sql = 'UPDATE users SET username=?, email=?, first_name=?, last_name=?, phone=?, address=? WHERE user_id=?';
-            if ($stmt = $conn->prepare($sql)) {
-                $param_id = $_SESSION['user_id'];
-                $stmt->bind_param('sssss si', $username, $email, $first_name, $last_name, $phone, $address, $param_id);
-            }
-            // Correct binding due to space inserted above; fix by re-preparing properly
             if ($stmt = $conn->prepare('UPDATE users SET username=?, email=?, first_name=?, last_name=?, phone=?, address=? WHERE user_id=?')) {
                 $param_id = $_SESSION['user_id'];
+                // 6 strings + 1 integer => 'ssssssi'
                 $stmt->bind_param('ssssssi', $username, $email, $first_name, $last_name, $phone, $address, $param_id);
                 if ($stmt->execute()) {
                     $_SESSION['username'] = $username;
-                    header('Location: ' . site_href('profile.php'));
+                    if (function_exists('flash_set')) { flash_set('success', 'Your profile has been updated.'); }
+                    header('Location: ' . site_href('pages/profile.php'));
                     exit;
                 }
                 $stmt->close();
@@ -136,12 +132,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+// Read any success message after redirect
+$flash_success = function_exists('flash_get') ? flash_get('success') : null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Profile</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
@@ -150,6 +149,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="wrapper">
         <h2>Manage Your Profile</h2>
         <p>Update your account information below.</p>
+        <?php if (!empty($flash_success)): ?>
+            <div class="alert alert-success"><?php echo e($flash_success); ?></div>
+        <?php endif; ?>
         <?php if ($username_err || $email_err || $first_name_err || $last_name_err || $phone_err || $address_err): ?><div class="alert alert-danger">Please fix the errors below.</div><?php endif; ?>
         <form action="" method="post">
             <?php echo csrf_field(); ?>

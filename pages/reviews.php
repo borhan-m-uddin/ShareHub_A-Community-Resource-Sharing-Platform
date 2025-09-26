@@ -6,8 +6,13 @@ $user_id = (int)($_SESSION['user_id'] ?? 0);
 $reviews_given = [];
 $reviews_received = [];
 
-// Submit review
-if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['submit_review'])){
+// Success message after PRG redirect
+if (isset($_GET['submitted']) && $_GET['submitted'] === '1') {
+    $success_message = 'Review submitted successfully!';
+}
+
+// Submit review (do not rely on submit button name so Enter/keyboard submits work)
+if($_SERVER['REQUEST_METHOD']==='POST'){
     if(!csrf_verify($_POST['csrf_token'] ?? null)){
         $error_message='Invalid request. Please try again.';
     } else {
@@ -19,7 +24,17 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['submit_review'])){
             $check_sql="SELECT review_id FROM reviews WHERE reviewer_id=? AND request_id=?";
             if($st=$conn->prepare($check_sql)){ $st->bind_param('ii',$user_id,$request_id); $st->execute(); $res=$st->get_result(); if($res->num_rows===0){
                 $sql="INSERT INTO reviews (reviewer_id,reviewed_user_id,request_id,rating,comment) VALUES (?,?,?,?,?)";
-                if($ins=$conn->prepare($sql)){ $ins->bind_param('iiiis',$user_id,$reviewed_user_id,$request_id,$rating,$comment); if($ins->execute()){ $success_message='Review submitted successfully!'; } else { $error_message='Error submitting review.'; } $ins->close(); }
+                if($ins=$conn->prepare($sql)){
+                    $ins->bind_param('iiiis',$user_id,$reviewed_user_id,$request_id,$rating,$comment);
+                    if($ins->execute()){
+                        // Post/Redirect/Get to avoid duplicate submissions and ensure correct path
+                        header('Location: '.site_href('pages/reviews.php').'?submitted=1');
+                        exit;
+                    } else {
+                        $error_message='Error submitting review.';
+                    }
+                    $ins->close();
+                }
             } else { $error_message='You have already reviewed this request.'; } $st->close(); }
         } else { $error_message='Please complete all required fields.'; }
     }
@@ -71,12 +86,11 @@ if($st=$conn->prepare($sql)){ $st->bind_param('i',$user_id); if($st->execute()){
 $avg_rating=0; if($reviews_received){ $total_rating=array_sum(array_column($reviews_received,'rating')); $avg_rating=round($total_rating/count($reviews_received),1); }
 ?>
 <!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8"><title>Reviews & Ratings</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Reviews & Ratings</title>
 <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head><body>
 <?php render_header(); ?>
 <div class="wrapper">
-    <div class="page-top-actions"><a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-default">← Back to Dashboard</a></div>
     <h2>⭐ Reviews & Ratings</h2>
     <p>Share your experience and build trust in the community.</p>
     <?php if(isset($success_message)): ?><div class="alert alert-success"><?php echo $success_message; ?></div><?php endif; ?>
@@ -95,7 +109,7 @@ $avg_rating=0; if($reviews_received){ $total_rating=array_sum(array_column($revi
     <div class="card" style="margin-bottom:16px;"><div class="card-body">
         <h3>📝 Submit a Review</h3>
         <p class="muted">You have completed transactions that can be reviewed:</p>
-        <form action="<?php echo site_href('reviews.php'); ?>" method="post">
+    <form action="<?php echo site_href('pages/reviews.php'); ?>" method="post">
             <?php echo csrf_field(); ?>
             <div class="form-group"><label for="request_id">Select Completed Request:</label>
                 <select name="request_id" id="request_id" class="form-control" required onchange="updateReviewForm()">

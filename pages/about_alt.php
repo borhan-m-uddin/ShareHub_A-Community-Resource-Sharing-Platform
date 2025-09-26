@@ -63,6 +63,7 @@ if (function_exists('db_connected') && db_connected()) {
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>" />
 <link rel="stylesheet" href="<?php echo asset_url('assets/css/marketing.css'); ?>" />
+<?php include ROOT_DIR . '/partials/head_meta.php'; ?>
 <script>
  document.addEventListener('DOMContentLoaded', function(){
    var ul = document.querySelector('.ticker ul'); if(!ul) return; ul.innerHTML = ul.innerHTML + ul.innerHTML; // duplicate for smooth scroll

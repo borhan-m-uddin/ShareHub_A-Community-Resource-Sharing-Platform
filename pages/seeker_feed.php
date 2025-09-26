@@ -6,21 +6,47 @@ if (($_SESSION['role'] ?? '') !== 'seeker') {
     exit;
 }
 
+$isPost = (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST');
+// Generate a one-time token for request submissions on initial GET
+if (!$isPost) {
+    try { $_SESSION['form_token_request'] = bin2hex(random_bytes(16)); }
+    catch (Throwable $e) { $_SESSION['form_token_request'] = bin2hex(random_bytes(8)); }
+}
+
 $notice = '';
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!csrf_verify($_POST['csrf_token'] ?? '')) {
         $error = 'Invalid request. Please try again.';
     } else {
+        // One-time form token to prevent accidental duplicate submission on reload/double-click
+        $sent_form_token = (string)($_POST['form_token'] ?? '');
+        $stored_form_token = (string)($_SESSION['form_token_request'] ?? '');
+        unset($_SESSION['form_token_request']);
+        if ($sent_form_token === '' || $stored_form_token === '' || !hash_equals($stored_form_token, $sent_form_token)) {
+            $error = 'Duplicate or invalid submission detected. Please refresh and try again.';
+        }
+
         $uid = (int)($_SESSION['user_id'] ?? 0);
         if ($_POST['action'] === 'request_item') {
             $item_id = (int)($_POST['item_id'] ?? 0);
             if ($item_id > 0 && function_exists('db_connected') && db_connected()) {
                 global $conn;
-                if ($st = $conn->prepare('SELECT giver_id FROM items WHERE item_id=? AND availability_status=\'available\' LIMIT 1')) {
+                // Short-window duplicate guard (same payload within 15s)
+                $msg = trim((string)($_POST['message'] ?? ''));
+                $payload_hash = hash('sha256', 'request_item|' . $uid . '|' . $item_id . '|' . $msg);
+                $now = time();
+                $last_hash = $_SESSION['last_request_hash'] ?? '';
+                $last_time = (int)($_SESSION['last_request_time'] ?? 0);
+                $withinWindow = ($now - $last_time) <= 15;
+                if ($payload_hash !== '' && $payload_hash === $last_hash && $withinWindow) {
+                    $notice = 'Your request was already submitted.';
+                } else {
+                if ($st = $conn->prepare('SELECT giver_id, title FROM items WHERE item_id=? AND availability_status=\'available\' LIMIT 1')) {
                     $st->bind_param('i', $item_id);
                     if ($st->execute() && ($res = $st->get_result()) && ($row = $res->fetch_assoc())) {
                         $giver_id = (int)$row['giver_id'];
+                        $item_title = (string)($row['title'] ?? 'item');
                         if ($giver_id === $uid) {
                             $error = 'You cannot request your own item.';
                         }
@@ -30,11 +56,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             $chk->close();
                             if (!$dup) {
                                 if ($ins = $conn->prepare('INSERT INTO requests(requester_id, giver_id, item_id, request_type, message) VALUES (?,?,?,?,?)')) {
-                                    $msg = trim((string)($_POST['message'] ?? ''));
                                     $type = 'item';
                                     $ins->bind_param('iiiss', $uid, $giver_id, $item_id, $type, $msg);
                                     if ($ins->execute()) {
                                         $notice = 'Item request sent.';
+                                        $reqId = (int)$ins->insert_id;
+                                        // Notify giver about new item request
+                                        if (function_exists('notify_user') && $giver_id > 0) {
+                                            $subject = 'New request for your item';
+                                            $body = 'A seeker requested your item: ' . $item_title;
+                                            @notify_user($giver_id, 'request.new', $subject, $body, 'request', $reqId, false);
+                                        }
+                                        $_SESSION['last_request_hash'] = $payload_hash;
+                                        $_SESSION['last_request_time'] = $now;
                                     } else {
                                         $error = 'Failed to send item request.';
                                     }
@@ -52,15 +86,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     }
                     $st->close();
                 }
+                }
             }
         } elseif ($_POST['action'] === 'request_service') {
             $service_id = (int)($_POST['service_id'] ?? 0);
             if ($service_id > 0 && function_exists('db_connected') && db_connected()) {
                 global $conn;
-                if ($st = $conn->prepare('SELECT giver_id FROM services WHERE service_id=? AND availability=\'available\' LIMIT 1')) {
+                $msg = trim((string)($_POST['message'] ?? ''));
+                $payload_hash = hash('sha256', 'request_service|' . $uid . '|' . $service_id . '|' . $msg);
+                $now = time();
+                $last_hash = $_SESSION['last_request_hash'] ?? '';
+                $last_time = (int)($_SESSION['last_request_time'] ?? 0);
+                $withinWindow = ($now - $last_time) <= 15;
+                if ($payload_hash !== '' && $payload_hash === $last_hash && $withinWindow) {
+                    $notice = 'Your request was already submitted.';
+                } else {
+                if ($st = $conn->prepare('SELECT giver_id, title FROM services WHERE service_id=? AND availability=\'available\' LIMIT 1')) {
                     $st->bind_param('i', $service_id);
                     if ($st->execute() && ($res = $st->get_result()) && ($row = $res->fetch_assoc())) {
                         $giver_id = (int)$row['giver_id'];
+                        $service_title = (string)($row['title'] ?? 'service');
                         if ($giver_id === $uid) {
                             $error = 'You cannot request your own service.';
                         }
@@ -70,11 +115,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             $chk->close();
                             if (!$dup) {
                                 if ($ins = $conn->prepare('INSERT INTO requests(requester_id, giver_id, service_id, request_type, message) VALUES (?,?,?,?,?)')) {
-                                    $msg = trim((string)($_POST['message'] ?? ''));
                                     $type = 'service';
                                     $ins->bind_param('iiiss', $uid, $giver_id, $service_id, $type, $msg);
                                     if ($ins->execute()) {
                                         $notice = 'Service request sent.';
+                                        $reqId = (int)$ins->insert_id;
+                                        // Notify giver about new service request
+                                        if (function_exists('notify_user') && $giver_id > 0) {
+                                            $subject = 'New request for your service';
+                                            $body = 'A seeker requested your service: ' . $service_title;
+                                            @notify_user($giver_id, 'request.new', $subject, $body, 'request', $reqId, false);
+                                        }
+                                        $_SESSION['last_request_hash'] = $payload_hash;
+                                        $_SESSION['last_request_time'] = $now;
                                     } else {
                                         $error = 'Failed to send service request.';
                                     }
@@ -91,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $res->free();
                     }
                     $st->close();
+                }
                 }
             }
         }
@@ -222,8 +276,10 @@ if ($tab === 'services' && function_exists('db_connected') && db_connected()) {
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discover – Available Items & Services</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
+    <?php include ROOT_DIR . '/partials/head_meta.php'; ?>
     <style>
         .feed-section h3 {
             margin: 0 0 8px 0
@@ -326,6 +382,7 @@ if ($tab === 'services' && function_exists('db_connected') && db_connected()) {
                                 <div class="card-footer card-body" style="display:flex;justify-content:flex-end;">
                                     <form method="post" style="display:flex;gap:6px;align-items:center;">
                                         <?php echo csrf_field(); ?>
+                                        <input type="hidden" name="form_token" value="<?php echo e($_SESSION['form_token_request'] ?? ''); ?>" />
                                         <input type="hidden" name="action" value="request_item" />
                                         <input type="hidden" name="item_id" value="<?php echo (int)$it['item_id']; ?>" />
                                         <input type="hidden" name="tab" value="items" />
@@ -379,6 +436,7 @@ if ($tab === 'services' && function_exists('db_connected') && db_connected()) {
                                 <div class="card-footer card-body" style="display:flex;justify-content:flex-end;">
                                     <form method="post" style="display:flex;gap:6px;align-items:center;">
                                         <?php echo csrf_field(); ?>
+                                        <input type="hidden" name="form_token" value="<?php echo e($_SESSION['form_token_request'] ?? ''); ?>" />
                                         <input type="hidden" name="action" value="request_service" />
                                         <input type="hidden" name="service_id" value="<?php echo (int)$sv['service_id']; ?>" />
                                         <input type="hidden" name="tab" value="services" />
@@ -402,6 +460,19 @@ if ($tab === 'services' && function_exists('db_connected') && db_connected()) {
         <?php endif; ?>
     </div>
     <?php render_footer(); ?>
+        <script>
+        (function(){
+            // Disable submit button on request forms to prevent double-clicks
+            document.querySelectorAll('form input[name="action"][value="request_item"], form input[name="action"][value="request_service"]').forEach(function(hidden){
+                var form = hidden.closest('form');
+                if(!form) return;
+                form.addEventListener('submit', function(){
+                    var btn = form.querySelector('button[type="submit"]');
+                    if(btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+                });
+            });
+        })();
+        </script>
 </body>
 
 </html>

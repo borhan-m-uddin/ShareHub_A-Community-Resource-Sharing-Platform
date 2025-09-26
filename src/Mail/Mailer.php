@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Mail;
 
 /**
@@ -78,12 +79,16 @@ class Mailer
                     $mailer->SMTPAuth   = true;
                     $mailer->Username   = $smtpUser;
                     $mailer->Password   = $smtpPass;
-                    if ($smtpSecure) { $mailer->SMTPSecure = $smtpSecure; }
+                    if ($smtpSecure) {
+                        $mailer->SMTPSecure = $smtpSecure;
+                    }
                     $mailer->CharSet    = 'UTF-8';
                     $mailer->Hostname   = $smtpLocalDomain;
                     if ($smtpDebugOn) {
                         $mailer->SMTPDebug = 2;
-                        $mailer->Debugoutput = function ($str) use (&$debugBuffer) { $debugBuffer .= $str . "\n"; };
+                        $mailer->Debugoutput = function ($str) use (&$debugBuffer) {
+                            $debugBuffer .= $str . "\n";
+                        };
                     }
                     $mailer->setFrom($from, $smtpFromName ?: '');
                     $mailer->addAddress($to);
@@ -102,7 +107,9 @@ class Mailer
                     $sent = $mailer->send();
                     if (!$sent) {
                         $errEntry = '[' . date('Y-m-d H:i:s') . '] PHPMailer error: ' . $mailer->ErrorInfo . "\n";
-                        if ($debugBuffer) { $errEntry .= rtrim($debugBuffer) . "\n"; }
+                        if ($debugBuffer) {
+                            $errEntry .= rtrim($debugBuffer) . "\n";
+                        }
                         @file_put_contents($logFile, $errEntry, FILE_APPEND);
                     }
                 }
@@ -133,33 +140,90 @@ class Mailer
                 $result = ['ok' => false, 'error' => ''];
                 $transport = ($secure === 'ssl') ? 'ssl' : 'tcp';
                 $remote = sprintf('%s://%s:%d', $transport, $host, $port);
-                $errno = 0; $errstr = '';
+                $errno = 0;
+                $errstr = '';
                 $fp = @stream_socket_client($remote, $errno, $errstr, 20, STREAM_CLIENT_CONNECT, stream_context_create(['ssl' => $sslOpts]));
-                if (!$fp) { $result['error'] = "connect: {$errno} {$errstr}"; return $result; }
+                if (!$fp) {
+                    $result['error'] = "connect: {$errno} {$errstr}";
+                    return $result;
+                }
                 stream_set_timeout($fp, 20);
                 $lastLine = '';
-                $read = function () use ($fp, &$lastLine) { $line = fgets($fp, 2048) ?: ''; $lastLine = $line; return $line; };
-                $write = function ($data) use ($fp) { return fwrite($fp, $data); };
+                $read = function () use ($fp, &$lastLine) {
+                    $line = fgets($fp, 2048) ?: '';
+                    $lastLine = $line;
+                    return $line;
+                };
+                $write = function ($data) use ($fp) {
+                    return fwrite($fp, $data);
+                };
                 $expect = function ($prefix) use ($read, &$lastLine) {
                     $line = '';
-                    do { $line = $read(); } while ($line !== '' && isset($line[3]) && $line[3] === '-');
+                    do {
+                        $line = $read();
+                    } while ($line !== '' && isset($line[3]) && $line[3] === '-');
                     return strpos($line, $prefix) === 0;
                 };
-                if (!$expect('220')) { $result['error'] = 'banner: ' . trim($lastLine); @fclose($fp); return $result; }
-                $ehlo = 'EHLO ' . $smtpLocalDomain . "\r\n"; $write($ehlo); $expect('250');
+                if (!$expect('220')) {
+                    $result['error'] = 'banner: ' . trim($lastLine);
+                    @fclose($fp);
+                    return $result;
+                }
+                $ehlo = 'EHLO ' . $smtpLocalDomain . "\r\n";
+                $write($ehlo);
+                $expect('250');
                 if ($secure === 'tls') {
                     $write("STARTTLS\r\n");
-                    if (!$expect('220')) { $result['error'] = 'starttls: ' . trim($lastLine); @fclose($fp); return $result; }
-                    if (!@stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT)) { $result['error'] = 'tls-handshake'; @fclose($fp); return $result; }
-                    $write($ehlo); $expect('250');
+                    if (!$expect('220')) {
+                        $result['error'] = 'starttls: ' . trim($lastLine);
+                        @fclose($fp);
+                        return $result;
+                    }
+                    if (!@stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT)) {
+                        $result['error'] = 'tls-handshake';
+                        @fclose($fp);
+                        return $result;
+                    }
+                    $write($ehlo);
+                    $expect('250');
                 }
-                $write("AUTH LOGIN\r\n"); if (!$expect('334')) { $result['error'] = 'auth-login: ' . trim($lastLine); @fclose($fp); return $result; }
-                $write(base64_encode($smtpUser) . "\r\n"); if (!$expect('334')) { $result['error'] = 'auth-user: ' . trim($lastLine); @fclose($fp); return $result; }
-                $write(base64_encode($smtpPass) . "\r\n"); if (!$expect('235')) { $result['error'] = 'auth-pass: ' . trim($lastLine); @fclose($fp); return $result; }
+                $write("AUTH LOGIN\r\n");
+                if (!$expect('334')) {
+                    $result['error'] = 'auth-login: ' . trim($lastLine);
+                    @fclose($fp);
+                    return $result;
+                }
+                $write(base64_encode($smtpUser) . "\r\n");
+                if (!$expect('334')) {
+                    $result['error'] = 'auth-user: ' . trim($lastLine);
+                    @fclose($fp);
+                    return $result;
+                }
+                $write(base64_encode($smtpPass) . "\r\n");
+                if (!$expect('235')) {
+                    $result['error'] = 'auth-pass: ' . trim($lastLine);
+                    @fclose($fp);
+                    return $result;
+                }
                 $fromAddr = $from ?: $smtpFrom;
-                $write('MAIL FROM: <' . $fromAddr . ">\r\n"); if (!$expect('250')) { $result['error'] = 'mail-from: ' . trim($lastLine); @fclose($fp); return $result; }
-                $write('RCPT TO: <' . $to . ">\r\n"); if (!$expect('250')) { $result['error'] = 'rcpt-to: ' . trim($lastLine); @fclose($fp); return $result; }
-                $write("DATA\r\n"); if (!$expect('354')) { $result['error'] = 'data: ' . trim($lastLine); @fclose($fp); return $result; }
+                $write('MAIL FROM: <' . $fromAddr . ">\r\n");
+                if (!$expect('250')) {
+                    $result['error'] = 'mail-from: ' . trim($lastLine);
+                    @fclose($fp);
+                    return $result;
+                }
+                $write('RCPT TO: <' . $to . ">\r\n");
+                if (!$expect('250')) {
+                    $result['error'] = 'rcpt-to: ' . trim($lastLine);
+                    @fclose($fp);
+                    return $result;
+                }
+                $write("DATA\r\n");
+                if (!$expect('354')) {
+                    $result['error'] = 'data: ' . trim($lastLine);
+                    @fclose($fp);
+                    return $result;
+                }
                 $fromHeaderName = $smtpFromName ? '"' . preg_replace('/[\r\n\"]+/', '', $smtpFromName) . '" ' : '';
                 $headers = '';
                 $headers .= 'From: ' . $fromHeaderName . '<' . $fromAddr . ">\r\n";
@@ -168,8 +232,16 @@ class Mailer
                 $headers .= "MIME-Version: 1.0\r\n";
                 $headers .= "Content-Type: text/plain; charset=UTF-8\r\n\r\n";
                 $body = $headers . $message . "\r\n.\r\n";
-                $write($body); if (!$expect('250')) { $result['error'] = 'post-data: ' . trim($lastLine); @fclose($fp); return $result; }
-                $write("QUIT\r\n"); @fclose($fp); $result['ok'] = true; return $result;
+                $write($body);
+                if (!$expect('250')) {
+                    $result['error'] = 'post-data: ' . trim($lastLine);
+                    @fclose($fp);
+                    return $result;
+                }
+                $write("QUIT\r\n");
+                @fclose($fp);
+                $result['ok'] = true;
+                return $result;
             };
             $try1 = $tryAttempt($smtpHost, $smtpPort, $secure);
             $smtpOk = $try1['ok'];
@@ -180,7 +252,9 @@ class Mailer
             if (!$smtpOk) {
                 $err = '[' . date('Y-m-d H:i:s') . '] SMTP send failed to ' . $to . ' via ' . $smtpHost . ':' . $smtpPort . ' (' . $smtpSecure . ')';
                 $err .= ' err1=' . ($try1['error'] ?? '');
-                if (isset($try2)) { $err .= ' err2=' . ($try2['error'] ?? ''); }
+                if (isset($try2)) {
+                    $err .= ' err2=' . ($try2['error'] ?? '');
+                }
                 $err .= "\n";
                 @file_put_contents($logFile, $err, FILE_APPEND);
             } else {
@@ -191,9 +265,15 @@ class Mailer
         // 3) mail()
         if (!$sent) {
             if (stripos(PHP_OS_FAMILY, 'Windows') !== false) {
-                if ($smtpHost) { @ini_set('SMTP', $smtpHost); }
-                if ($smtpPort) { @ini_set('smtp_port', (string)$smtpPort); }
-                if ($from) { @ini_set('sendmail_from', $from); }
+                if ($smtpHost) {
+                    @ini_set('SMTP', $smtpHost);
+                }
+                if ($smtpPort) {
+                    @ini_set('smtp_port', (string)$smtpPort);
+                }
+                if ($from) {
+                    @ini_set('sendmail_from', $from);
+                }
             }
             $fromHeader = $from;
             if ($smtpFromName) {

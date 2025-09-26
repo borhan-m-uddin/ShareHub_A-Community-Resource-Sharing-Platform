@@ -142,6 +142,7 @@ foreach ($all_items as $it) {
 
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage All Items - Admin</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>" />
 

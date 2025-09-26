@@ -122,7 +122,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         }
                         verification_generate_and_send($newId, $param_email, $param_username);
                     }
-                    header('Location: ' . site_href('verify_notice.php?uid=' . urlencode((string)$newId)));
+                    header('Location: ' . site_href('pages/verify_notice.php?uid=' . urlencode((string)$newId)));
                     exit();
                 }
                 $stmt->close();
@@ -135,6 +135,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>

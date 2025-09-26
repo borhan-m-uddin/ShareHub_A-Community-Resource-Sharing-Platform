@@ -86,7 +86,7 @@ if (!function_exists('verification_is_verified')) {
 if (!function_exists('verification_require')) {
     function verification_require(): void
     {
-        if (!isset($_SESSION['user_id'])) return; if (!verification_is_verified((int)$_SESSION['user_id'])) { header('Location: ' . site_href('verify_notice.php?uid=' . (int)$_SESSION['user_id'])); exit; }
+        if (!isset($_SESSION['user_id'])) return; if (!verification_is_verified((int)$_SESSION['user_id'])) { header('Location: ' . site_href('pages/verify_notice.php?uid=' . (int)$_SESSION['user_id'])); exit; }
     }
 }
 
