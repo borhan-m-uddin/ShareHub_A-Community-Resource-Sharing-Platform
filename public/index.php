@@ -22,17 +22,30 @@ require_once $root . 'bootstrap.php';
 // Static assets passthrough: serve uploads and assets from project root when using public/ as docroot
 // This allows URLs like /uploads/items/xxx.jpg and /assets/... to work in both dev and prod.
 // Security: Only allow whitelisted prefixes and specific files; never serve .php.
-function __serve_static(string $absFile): void {
+function __serve_static(string $absFile): void
+{
 	$type = 'application/octet-stream';
 	if (function_exists('mime_content_type')) {
 		$det = @mime_content_type($absFile);
-		if ($det) { $type = $det; }
+		if ($det) {
+			$type = $det;
+		}
 	} else {
 		$ext = strtolower(pathinfo($absFile, PATHINFO_EXTENSION));
 		$map = [
-			'css'=>'text/css','js'=>'application/javascript','svg'=>'image/svg+xml','png'=>'image/png','jpg'=>'image/jpeg','jpeg'=>'image/jpeg','gif'=>'image/gif','webp'=>'image/webp','ico'=>'image/x-icon'
+			'css' => 'text/css',
+			'js' => 'application/javascript',
+			'svg' => 'image/svg+xml',
+			'png' => 'image/png',
+			'jpg' => 'image/jpeg',
+			'jpeg' => 'image/jpeg',
+			'gif' => 'image/gif',
+			'webp' => 'image/webp',
+			'ico' => 'image/x-icon'
 		];
-		if (isset($map[$ext])) { $type = $map[$ext]; }
+		if (isset($map[$ext])) {
+			$type = $map[$ext];
+		}
 	}
 	header('Content-Type: ' . $type);
 	header('Cache-Control: public, max-age=86400');
@@ -52,22 +65,32 @@ if (strpos($path, '/uploads/') === 0 || strpos($path, '/assets/') === 0 || $path
 // Helper: safely include a legacy script by relative path (whitelist root and admin subdir)
 $safeInclude = function (string $rel) use ($root) {
 	$rel = ltrim($rel, '/\\');
-	if ($rel === '') { $rel = 'index.php'; }
+	if ($rel === '') {
+		$rel = 'index.php';
+	}
 	// Allow only files directly under root, admin/, pages/, or pages/api/
-	if (preg_match('#^(admin/)?[A-Za-z0-9_-]+\.php$#', $rel) !== 1
+	if (
+		preg_match('#^(admin/)?[A-Za-z0-9_-]+\.php$#', $rel) !== 1
 		&& preg_match('#^pages/[A-Za-z0-9_-]+\.php$#', $rel) !== 1
-		&& preg_match('#^pages/api/[A-Za-z0-9_-]+\.php$#', $rel) !== 1) {
+		&& preg_match('#^pages/api/[A-Za-z0-9_-]+\.php$#', $rel) !== 1
+	) {
 		// If a simple name like "login.php" was provided and not found in root, try pages/ fallback below
 		if (preg_match('#^[A-Za-z0-9_-]+\.php$#', $rel) !== 1 && preg_match('#^admin/[A-Za-z0-9_-]+\.php$#', $rel) !== 1) {
 			return false;
 		}
 	}
 	$file = $root . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $rel);
-	if (is_file($file)) { require $file; return true; }
+	if (is_file($file)) {
+		require $file;
+		return true;
+	}
 	// Fallback: if looking for a root file that doesn't exist, try pages/<name>.php
 	if (preg_match('#^[A-Za-z0-9_-]+\.php$#', $rel) === 1) {
 		$pfile = $root . 'pages' . DIRECTORY_SEPARATOR . $rel;
-		if (is_file($pfile)) { require $pfile; return true; }
+		if (is_file($pfile)) {
+			require $pfile;
+			return true;
+		}
 	}
 	return false;
 };
@@ -118,9 +141,13 @@ if (is_file($routeFile)) {
 	$definition = require $routeFile; // returns array
 	$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 	foreach ($definition as $def) {
-		if (count($def) < 3) { continue; }
+		if (count($def) < 3) {
+			continue;
+		}
 		[$verb, $pattern, $handler] = $def;
-		if (strcasecmp($verb, $method) !== 0) { continue; }
+		if (strcasecmp($verb, $method) !== 0) {
+			continue;
+		}
 		// Convert simple pattern with named groups already regex-ready or plain path
 		$regex = '#^' . $pattern . '$#';
 		if (preg_match($regex, $path, $m)) {
@@ -133,7 +160,9 @@ if (is_file($routeFile)) {
 					// Extract named params only
 					$params = [];
 					foreach ($m as $k => $v) {
-						if (!is_int($k)) { $params[$k] = $v; }
+						if (!is_int($k)) {
+							$params[$k] = $v;
+						}
 					}
 					if (method_exists($controller, 'setRouteParams')) {
 						$controller->setRouteParams($params);
@@ -152,38 +181,50 @@ if (isset($legacyMap[$path]) && $safeInclude($legacyMap[$path])) {
 }
 
 // 3) Backward-compat: if someone requests "/file.php" or "/admin/file.php" or "/pages[/api]/file.php", try to serve it
-if (preg_match('#^/(admin/)?[A-Za-z0-9_-]+\.php$#', $path) === 1
+if (
+	preg_match('#^/(admin/)?[A-Za-z0-9_-]+\.php$#', $path) === 1
 	|| preg_match('#^/pages/[A-Za-z0-9_-]+\.php$#', $path) === 1
-	|| preg_match('#^/pages/api/[A-Za-z0-9_-]+\.php$#', $path) === 1) {
-	if ($safeInclude(ltrim($path, '/'))) { exit; }
+	|| preg_match('#^/pages/api/[A-Za-z0-9_-]+\.php$#', $path) === 1
+) {
+	if ($safeInclude(ltrim($path, '/'))) {
+		exit;
+	}
 }
 
 // 4) Implicit mapping: "/xxxx" -> "xxxx.php" ; "/admin/xxxx" -> "admin/xxxx.php"
 if (preg_match('#^/([A-Za-z0-9_-]+)$#', $path, $m)) {
-	if ($safeInclude($m[1] . '.php')) { exit; }
+	if ($safeInclude($m[1] . '.php')) {
+		exit;
+	}
 }
 if (preg_match('#^/admin/([A-Za-z0-9_-]+)$#', $path, $m)) {
-	if ($safeInclude('admin/' . $m[1] . '.php')) { exit; }
+	if ($safeInclude('admin/' . $m[1] . '.php')) {
+		exit;
+	}
 }
 
 // 5) Static assets under /public should pass through via web server; if we got here, it's likely a 404 route
 http_response_code(404);
-?><!DOCTYPE html>
+?>
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
+	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>404 Not Found</title>
-  <link rel="stylesheet" href="/style.css">
+	<title>404 Not Found</title>
+	<link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
-  <div class="wrapper" style="max-width:720px;margin:40px auto;">
-	<h2>Page not found</h2>
-	<p>The requested path <code><?php echo htmlspecialchars($path, ENT_QUOTES, 'UTF-8'); ?></code> was not found.</p>
-	<div class="page-top-actions" style="margin-top:12px;">
-	  <a class="btn btn-primary" href="/">Go to Home</a>
-	  <a class="btn btn-outline" href="/login">Login</a>
+	<div class="wrapper" style="max-width:720px;margin:40px auto;">
+		<h2>Page not found</h2>
+		<p>The requested path <code><?php echo htmlspecialchars($path, ENT_QUOTES, 'UTF-8'); ?></code> was not found.</p>
+		<div class="page-top-actions" style="margin-top:12px;">
+			<a class="btn btn-primary" href="/">Go to Home</a>
+			<a class="btn btn-outline" href="/login">Login</a>
+		</div>
 	</div>
-  </div>
 </body>
+
 </html>

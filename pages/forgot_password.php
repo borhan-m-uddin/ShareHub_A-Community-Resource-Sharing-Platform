@@ -36,36 +36,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Forgot Password</title>
-<link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password</title>
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
+
 <body>
-<?php render_header(); ?>
-<div class="container" style="max-width:480px;margin:40px auto;">
-    <div class="page-top-actions">
-    <a href="<?php echo site_href('pages/login.php'); ?>" class="btn btn-outline">← Back to login</a>
+    <?php render_header(); ?>
+    <div class="container" style="max-width:480px;margin:40px auto;">
+        <div class="page-top-actions">
+            <a href="<?php echo site_href('pages/login.php'); ?>" class="btn btn-outline">← Back to login</a>
+        </div>
+        <h2>Forgot Password</h2>
+        <?php if ($statusMsg): ?>
+            <div class="alert <?php echo $sent ? 'alert-success' : 'alert-danger'; ?>"><?php echo e($statusMsg); ?></div>
+        <?php endif; ?>
+        <?php if (!$sent): ?>
+            <form action="" method="post" novalidate>
+                <?php echo csrf_field(); ?>
+                <div class="form-group">
+                    <label for="email">Your account email</label>
+                    <input type="email" name="email" id="email" required class="form-control" maxlength="190" autofocus>
+                </div>
+                <div class="form-group">
+                    <button class="btn" type="submit">Send Reset Code</button>
+                </div>
+            </form>
+        <?php else: ?>
+            <p><a class="btn" href="<?php echo site_href('pages/login.php'); ?>">Return to Login</a></p>
+        <?php endif; ?>
     </div>
-    <h2>Forgot Password</h2>
-    <?php if ($statusMsg): ?>
-        <div class="alert <?php echo $sent ? 'alert-success':'alert-danger'; ?>"><?php echo e($statusMsg); ?></div>
-    <?php endif; ?>
-    <?php if (!$sent): ?>
-    <form action="" method="post" novalidate>
-        <?php echo csrf_field(); ?>
-        <div class="form-group">
-            <label for="email">Your account email</label>
-            <input type="email" name="email" id="email" required class="form-control" maxlength="190" autofocus>
-        </div>
-        <div class="form-group">
-            <button class="btn" type="submit">Send Reset Code</button>
-        </div>
-    </form>
-    <?php else: ?>
-    <p><a class="btn" href="<?php echo site_href('pages/login.php'); ?>">Return to Login</a></p>
-    <?php endif; ?>
-</div>
 </body>
+
 </html>

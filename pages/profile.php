@@ -86,16 +86,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fnCand = trim((string)($_POST['first_name'] ?? ''));
     if ($fnCand === '') {
         $first_name_err = 'Please enter your first name.';
-    } elseif (mb_strlen($fnCand) < $MIN_NAME || mb_strlen($fnCand) > $MAX_NAME || !preg_match('/^[\p{L} \-\']+$/u', $fnCand)) {
-        $first_name_err = "First name must be {$MIN_NAME}-{$MAX_NAME} letters (spaces, - and ' allowed).";
+    } elseif (mb_strlen($fnCand) < $MIN_NAME || mb_strlen($fnCand) > $MAX_NAME || !preg_match('/^[\p{L} \.\']+$/u', $fnCand)) {
+        $first_name_err = "First name must be {$MIN_NAME}-{$MAX_NAME} letters (spaces, . and ' allowed).";
     } else {
         $first_name = preg_replace('/\s{2,}/', ' ', $fnCand);
     }
     $lnCand = trim((string)($_POST['last_name'] ?? ''));
     if ($lnCand === '') {
         $last_name_err = 'Please enter your last name.';
-    } elseif (mb_strlen($lnCand) < $MIN_NAME || mb_strlen($lnCand) > $MAX_NAME || !preg_match('/^[\p{L} \-\']+$/u', $lnCand)) {
-        $last_name_err = "Last name must be {$MIN_NAME}-{$MAX_NAME} letters (spaces, - and ' allowed).";
+    } elseif (mb_strlen($lnCand) < $MIN_NAME || mb_strlen($lnCand) > $MAX_NAME || !preg_match('/^[\p{L} \.\']+$/u', $lnCand)) {
+        $last_name_err = "Last name must be {$MIN_NAME}-{$MAX_NAME} letters (spaces, . and ' allowed).";
     } else {
         $last_name = preg_replace('/\s{2,}/', ' ', $lnCand);
     }
@@ -123,7 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param('ssssssi', $username, $email, $first_name, $last_name, $phone, $address, $param_id);
                 if ($stmt->execute()) {
                     $_SESSION['username'] = $username;
-                    if (function_exists('flash_set')) { flash_set('success', 'Your profile has been updated.'); }
+                    if (function_exists('flash_set')) {
+                        flash_set('success', 'Your profile has been updated.');
+                    }
                     header('Location: ' . site_href('pages/profile.php'));
                     exit;
                 }
@@ -190,7 +192,7 @@ $flash_success = function_exists('flash_get') ? flash_get('success') : null;
                 <a href="<?php echo site_href('pages/dashboard.php'); ?>" class="btn btn-default">Cancel</a>
             </div>
         </form>
-    <p><a href="<?php echo site_href('pages/forgot_password.php'); ?>">Reset Your Password</a></p>
+        <p><a href="<?php echo site_href('pages/forgot_password.php'); ?>">Reset Your Password</a></p>
     </div>
     <?php render_footer(); ?>
 </body>

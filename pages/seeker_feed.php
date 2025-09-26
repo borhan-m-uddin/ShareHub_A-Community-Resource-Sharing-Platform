@@ -9,8 +9,11 @@ if (($_SESSION['role'] ?? '') !== 'seeker') {
 $isPost = (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST');
 // Generate a one-time token for request submissions on initial GET
 if (!$isPost) {
-    try { $_SESSION['form_token_request'] = bin2hex(random_bytes(16)); }
-    catch (Throwable $e) { $_SESSION['form_token_request'] = bin2hex(random_bytes(8)); }
+    try {
+        $_SESSION['form_token_request'] = bin2hex(random_bytes(16));
+    } catch (Throwable $e) {
+        $_SESSION['form_token_request'] = bin2hex(random_bytes(8));
+    }
 }
 
 $notice = '';
@@ -42,50 +45,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if ($payload_hash !== '' && $payload_hash === $last_hash && $withinWindow) {
                     $notice = 'Your request was already submitted.';
                 } else {
-                if ($st = $conn->prepare('SELECT giver_id, title FROM items WHERE item_id=? AND availability_status=\'available\' LIMIT 1')) {
-                    $st->bind_param('i', $item_id);
-                    if ($st->execute() && ($res = $st->get_result()) && ($row = $res->fetch_assoc())) {
-                        $giver_id = (int)$row['giver_id'];
-                        $item_title = (string)($row['title'] ?? 'item');
-                        if ($giver_id === $uid) {
-                            $error = 'You cannot request your own item.';
-                        }
-                        if (!$error && ($chk = $conn->prepare('SELECT 1 FROM requests WHERE requester_id=? AND item_id=? AND status=\'pending\' LIMIT 1'))) {
-                            $chk->bind_param('ii', $uid, $item_id);
-                            $dup = $chk->execute() && $chk->get_result()->num_rows > 0;
-                            $chk->close();
-                            if (!$dup) {
-                                if ($ins = $conn->prepare('INSERT INTO requests(requester_id, giver_id, item_id, request_type, message) VALUES (?,?,?,?,?)')) {
-                                    $type = 'item';
-                                    $ins->bind_param('iiiss', $uid, $giver_id, $item_id, $type, $msg);
-                                    if ($ins->execute()) {
-                                        $notice = 'Item request sent.';
-                                        $reqId = (int)$ins->insert_id;
-                                        // Notify giver about new item request
-                                        if (function_exists('notify_user') && $giver_id > 0) {
-                                            $subject = 'New request for your item';
-                                            $body = 'A seeker requested your item: ' . $item_title;
-                                            @notify_user($giver_id, 'request.new', $subject, $body, 'request', $reqId, false);
-                                        }
-                                        $_SESSION['last_request_hash'] = $payload_hash;
-                                        $_SESSION['last_request_time'] = $now;
-                                    } else {
-                                        $error = 'Failed to send item request.';
-                                    }
-                                    $ins->close();
-                                }
-                            } else {
-                                $error = 'You already have a pending request for this item.';
+                    if ($st = $conn->prepare('SELECT giver_id, title FROM items WHERE item_id=? AND availability_status=\'available\' LIMIT 1')) {
+                        $st->bind_param('i', $item_id);
+                        if ($st->execute() && ($res = $st->get_result()) && ($row = $res->fetch_assoc())) {
+                            $giver_id = (int)$row['giver_id'];
+                            $item_title = (string)($row['title'] ?? 'item');
+                            if ($giver_id === $uid) {
+                                $error = 'You cannot request your own item.';
                             }
+                            if (!$error && ($chk = $conn->prepare('SELECT 1 FROM requests WHERE requester_id=? AND item_id=? AND status=\'pending\' LIMIT 1'))) {
+                                $chk->bind_param('ii', $uid, $item_id);
+                                $dup = $chk->execute() && $chk->get_result()->num_rows > 0;
+                                $chk->close();
+                                if (!$dup) {
+                                    if ($ins = $conn->prepare('INSERT INTO requests(requester_id, giver_id, item_id, request_type, message) VALUES (?,?,?,?,?)')) {
+                                        $type = 'item';
+                                        $ins->bind_param('iiiss', $uid, $giver_id, $item_id, $type, $msg);
+                                        if ($ins->execute()) {
+                                            $notice = 'Item request sent.';
+                                            $reqId = (int)$ins->insert_id;
+                                            // Notify giver about new item request
+                                            if (function_exists('notify_user') && $giver_id > 0) {
+                                                $subject = 'New request for your item';
+                                                $body = 'A seeker requested your item: ' . $item_title;
+                                                @notify_user($giver_id, 'request.new', $subject, $body, 'request', $reqId, false);
+                                            }
+                                            $_SESSION['last_request_hash'] = $payload_hash;
+                                            $_SESSION['last_request_time'] = $now;
+                                        } else {
+                                            $error = 'Failed to send item request.';
+                                        }
+                                        $ins->close();
+                                    }
+                                } else {
+                                    $error = 'You already have a pending request for this item.';
+                                }
+                            }
+                        } else {
+                            $error = 'Item not available.';
                         }
-                    } else {
-                        $error = 'Item not available.';
+                        if ($res) {
+                            $res->free();
+                        }
+                        $st->close();
                     }
-                    if ($res) {
-                        $res->free();
-                    }
-                    $st->close();
-                }
                 }
             }
         } elseif ($_POST['action'] === 'request_service') {
@@ -101,50 +104,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if ($payload_hash !== '' && $payload_hash === $last_hash && $withinWindow) {
                     $notice = 'Your request was already submitted.';
                 } else {
-                if ($st = $conn->prepare('SELECT giver_id, title FROM services WHERE service_id=? AND availability=\'available\' LIMIT 1')) {
-                    $st->bind_param('i', $service_id);
-                    if ($st->execute() && ($res = $st->get_result()) && ($row = $res->fetch_assoc())) {
-                        $giver_id = (int)$row['giver_id'];
-                        $service_title = (string)($row['title'] ?? 'service');
-                        if ($giver_id === $uid) {
-                            $error = 'You cannot request your own service.';
-                        }
-                        if (!$error && ($chk = $conn->prepare('SELECT 1 FROM requests WHERE requester_id=? AND service_id=? AND status=\'pending\' LIMIT 1'))) {
-                            $chk->bind_param('ii', $uid, $service_id);
-                            $dup = $chk->execute() && $chk->get_result()->num_rows > 0;
-                            $chk->close();
-                            if (!$dup) {
-                                if ($ins = $conn->prepare('INSERT INTO requests(requester_id, giver_id, service_id, request_type, message) VALUES (?,?,?,?,?)')) {
-                                    $type = 'service';
-                                    $ins->bind_param('iiiss', $uid, $giver_id, $service_id, $type, $msg);
-                                    if ($ins->execute()) {
-                                        $notice = 'Service request sent.';
-                                        $reqId = (int)$ins->insert_id;
-                                        // Notify giver about new service request
-                                        if (function_exists('notify_user') && $giver_id > 0) {
-                                            $subject = 'New request for your service';
-                                            $body = 'A seeker requested your service: ' . $service_title;
-                                            @notify_user($giver_id, 'request.new', $subject, $body, 'request', $reqId, false);
-                                        }
-                                        $_SESSION['last_request_hash'] = $payload_hash;
-                                        $_SESSION['last_request_time'] = $now;
-                                    } else {
-                                        $error = 'Failed to send service request.';
-                                    }
-                                    $ins->close();
-                                }
-                            } else {
-                                $error = 'You already have a pending request for this service.';
+                    if ($st = $conn->prepare('SELECT giver_id, title FROM services WHERE service_id=? AND availability=\'available\' LIMIT 1')) {
+                        $st->bind_param('i', $service_id);
+                        if ($st->execute() && ($res = $st->get_result()) && ($row = $res->fetch_assoc())) {
+                            $giver_id = (int)$row['giver_id'];
+                            $service_title = (string)($row['title'] ?? 'service');
+                            if ($giver_id === $uid) {
+                                $error = 'You cannot request your own service.';
                             }
+                            if (!$error && ($chk = $conn->prepare('SELECT 1 FROM requests WHERE requester_id=? AND service_id=? AND status=\'pending\' LIMIT 1'))) {
+                                $chk->bind_param('ii', $uid, $service_id);
+                                $dup = $chk->execute() && $chk->get_result()->num_rows > 0;
+                                $chk->close();
+                                if (!$dup) {
+                                    if ($ins = $conn->prepare('INSERT INTO requests(requester_id, giver_id, service_id, request_type, message) VALUES (?,?,?,?,?)')) {
+                                        $type = 'service';
+                                        $ins->bind_param('iiiss', $uid, $giver_id, $service_id, $type, $msg);
+                                        if ($ins->execute()) {
+                                            $notice = 'Service request sent.';
+                                            $reqId = (int)$ins->insert_id;
+                                            // Notify giver about new service request
+                                            if (function_exists('notify_user') && $giver_id > 0) {
+                                                $subject = 'New request for your service';
+                                                $body = 'A seeker requested your service: ' . $service_title;
+                                                @notify_user($giver_id, 'request.new', $subject, $body, 'request', $reqId, false);
+                                            }
+                                            $_SESSION['last_request_hash'] = $payload_hash;
+                                            $_SESSION['last_request_time'] = $now;
+                                        } else {
+                                            $error = 'Failed to send service request.';
+                                        }
+                                        $ins->close();
+                                    }
+                                } else {
+                                    $error = 'You already have a pending request for this service.';
+                                }
+                            }
+                        } else {
+                            $error = 'Service not available.';
                         }
-                    } else {
-                        $error = 'Service not available.';
+                        if ($res) {
+                            $res->free();
+                        }
+                        $st->close();
                     }
-                    if ($res) {
-                        $res->free();
-                    }
-                    $st->close();
-                }
                 }
             }
         }
@@ -364,7 +367,9 @@ if ($tab === 'services' && function_exists('db_connected') && db_connected()) {
                                     }
                                 }
                                 ?>
-                                <div class="item-image-wrap"<?php if ($hasImage) { echo ' style="--full-src: url(\'' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '\');"'; } ?>>
+                                <div class="item-image-wrap" <?php if ($hasImage) {
+                                                                    echo ' style="--full-src: url(\'' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '\');"';
+                                                                } ?>>
                                     <?php if ($hasImage): ?>
                                         <img class="item-image" src="<?php echo htmlspecialchars($src, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($it['title'], ENT_QUOTES, 'UTF-8'); ?>">
                                     <?php endif; ?>
@@ -460,19 +465,22 @@ if ($tab === 'services' && function_exists('db_connected') && db_connected()) {
         <?php endif; ?>
     </div>
     <?php render_footer(); ?>
-        <script>
-        (function(){
+    <script>
+        (function() {
             // Disable submit button on request forms to prevent double-clicks
-            document.querySelectorAll('form input[name="action"][value="request_item"], form input[name="action"][value="request_service"]').forEach(function(hidden){
+            document.querySelectorAll('form input[name="action"][value="request_item"], form input[name="action"][value="request_service"]').forEach(function(hidden) {
                 var form = hidden.closest('form');
-                if(!form) return;
-                form.addEventListener('submit', function(){
+                if (!form) return;
+                form.addEventListener('submit', function() {
                     var btn = form.querySelector('button[type="submit"]');
-                    if(btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.textContent = 'Sending…';
+                    }
                 });
             });
         })();
-        </script>
+    </script>
 </body>
 
 </html>

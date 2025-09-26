@@ -96,7 +96,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <form action="" method="post" novalidate><?php echo csrf_field(); ?>
                     <div class="form-group"><label>Username or Email</label><input type="text" name="username" class="form-control" autocomplete="username" value="<?php echo e($username); ?>" required></div>
                     <div class="form-group password-toggle-wrapper"><label>Password</label>
-                        <div class="password-field icon-variant"><input id="login_password" type="password" name="password" class="form-control"><button type="button" class="pw-icon-btn" data-target="login_password" aria-label="Show password" aria-pressed="false"><span class="pw-icon pw-icon-show" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="pw-icon pw-icon-hide" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 18 18"/><path d="M10.73 5.08A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.15 21.15 0 0 1-1.67 2.68"/><path d="M6.61 6.61A10.94 10.94 0 0 0 1 12s4 8 11 8a10.94 10.94 0 0 0 5.39-1.61"/><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/></svg></span></button></div>
+                        <div class="password-field icon-variant"><input id="login_password" type="password" name="password" class="form-control"><button type="button" class="pw-icon-btn" data-target="login_password" aria-label="Show password" aria-pressed="false"><span class="pw-icon pw-icon-show" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg></span><span class="pw-icon pw-icon-hide" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m3 3 18 18" />
+                                        <path d="M10.73 5.08A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.15 21.15 0 0 1-1.67 2.68" />
+                                        <path d="M6.61 6.61A10.94 10.94 0 0 0 1 12s4 8 11 8a10.94 10.94 0 0 0 5.39-1.61" />
+                                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                                    </svg></span></button></div>
                     </div>
                     <div class="auth-actions"><button type="submit" class="btn btn-primary btn-shimmer">Login</button><a class="btn btn-outline" href="<?php echo site_href('pages/register.php'); ?>">Create account</a></div>
                     <p style="margin-top:12px;font-size:0.9rem;"><a href="<?php echo site_href('pages/forgot_password.php'); ?>">Forgot password?</a></p>

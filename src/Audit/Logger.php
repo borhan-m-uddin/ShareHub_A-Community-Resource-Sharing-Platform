@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Audit;
 
 class Logger
@@ -14,7 +15,7 @@ class Logger
         $adminId = (int)($_SESSION['user_id'] ?? 0);
         if ($adminId <= 0) return false;
         $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        @ $conn->query("CREATE TABLE IF NOT EXISTS audit_log (
+        @$conn->query("CREATE TABLE IF NOT EXISTS audit_log (
             id INT AUTO_INCREMENT PRIMARY KEY,
             admin_user_id INT NOT NULL,
             action VARCHAR(60) NOT NULL,

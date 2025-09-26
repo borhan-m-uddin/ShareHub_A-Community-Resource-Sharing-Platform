@@ -457,28 +457,28 @@ if ($stmt = $conn->prepare($sql)) {
     <title>Admin - Reports & Analytics</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
     <style>
-    .stat-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 6px 0;
-        border-bottom: 1px solid var(--border);
-    }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+        }
 
-    .stat-row:last-child {
-        border-bottom: 0
-    }
+        .stat-row:last-child {
+            border-bottom: 0
+        }
 
-    .rating-bar {
-        height: 12px;
-        background: var(--muted-bg, #e9ecef);
-        border-radius: 8px;
-        overflow: hidden
-    }
+        .rating-bar {
+            height: 12px;
+            background: var(--muted-bg, #e9ecef);
+            border-radius: 8px;
+            overflow: hidden
+        }
 
-    .rating-fill {
-        height: 100%;
-        background: var(--warning);
-    }
+        .rating-fill {
+            height: 100%;
+            background: var(--warning);
+        }
     </style>
 </head>
 

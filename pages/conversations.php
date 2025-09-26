@@ -32,7 +32,7 @@ if (function_exists('conversations_ensure_schema')) {
                     <h1 class="u-mb-4 u-m-0">Messages</h1>
                     <p class="muted u-m-0">Chat with other users. Start a new conversation from the sidebar (menu icon on mobile).</p>
                 </div>
-                
+
             </div>
         </div>
         <div class="conversations-grid" style="min-height:560px;">
@@ -243,9 +243,11 @@ if (function_exists('conversations_ensure_schema')) {
                 });
             }
 
-            function isMobile(){ return window.matchMedia('(max-width: 880px)').matches; }
+            function isMobile() {
+                return window.matchMedia('(max-width: 880px)').matches;
+            }
 
-            function openListDrawer(open){
+            function openListDrawer(open) {
                 if (!convoSidebar || !convListOverlay) return;
                 const on = !!open;
                 if (on) {
@@ -387,7 +389,9 @@ if (function_exists('conversations_ensure_schema')) {
             // For starting a new chat on mobile, open drawer via the menu icon (☰) and search
             btnToggleList && btnToggleList.addEventListener('click', () => openListDrawer(!convoSidebar.classList.contains('open')));
             convListOverlay && convListOverlay.addEventListener('click', () => openListDrawer(false));
-            document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') openListDrawer(false); });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') openListDrawer(false);
+            });
             window.addEventListener('resize', () => {
                 if (!isMobile()) {
                     openListDrawer(false);

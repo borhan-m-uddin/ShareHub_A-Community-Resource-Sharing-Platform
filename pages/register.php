@@ -108,7 +108,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             $q->bind_param('s', $param_username);
                             if ($q->execute()) {
                                 $r = $q->get_result();
-                                if ($row = $r->fetch_assoc()) { $newId = (int)$row['user_id']; }
+                                if ($row = $r->fetch_assoc()) {
+                                    $newId = (int)$row['user_id'];
+                                }
                                 if ($r) $r->free();
                             }
                             $q->close();
@@ -133,82 +135,101 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
     <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
+
 <body class="auth-page">
-<?php render_header(); ?>
-<div class="auth-container">
-    <div class="card card-centered">
-        <div class="card-body">
-            <h2 class="auth-title">Create your account</h2>
-            <p class="text-muted">Join ShareHub as a seeker or giver</p>
-            <form action="" method="post" novalidate>
-                <?php echo csrf_field(); ?>
-                <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
-                    <label>Username</label>
-                    <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($username); ?>" pattern="[A-Za-z0-9]+" title="Letters and numbers only" required>
-                    <span class="help-block"><?php echo $username_err; ?></span>
-                </div>
-                <div class="form-group <?php echo (!empty($email_err)) ? 'has-error' : ''; ?>">
-                    <label>Email</label>
-                    <input type="email" name="email" class="form-control" value="<?php echo htmlspecialchars($email); ?>" required>
-                    <span class="help-block"><?php echo $email_err; ?></span>
-                </div>
-                <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?> password-toggle-wrapper">
-                    <label>Password</label>
-                    <div class="password-field icon-variant">
-                        <input id="reg_password" type="password" name="password" class="form-control" value="<?php echo htmlspecialchars($password); ?>" minlength="8" pattern="(?=.*\d).{8,}" title="At least 8 characters with at least one number" required>
-                        <button type="button" class="pw-icon-btn" data-target="reg_password" aria-label="Show password" aria-pressed="false">
-                            <span class="pw-icon pw-icon-show" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></span>
-                            <span class="pw-icon pw-icon-hide" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 18 18"/><path d="M10.73 5.08A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.15 21.15 0 0 1-1.67 2.68"/><path d="M6.61 6.61A10.94 10.94 0 0 0 1 12s4 8 11 8a10.94 10.94 0 0 0 5.39-1.61"/><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/></svg></span>
-                        </button>
+    <?php render_header(); ?>
+    <div class="auth-container">
+        <div class="card card-centered">
+            <div class="card-body">
+                <h2 class="auth-title">Create your account</h2>
+                <p class="text-muted">Join ShareHub as a seeker or giver</p>
+                <form action="" method="post" novalidate>
+                    <?php echo csrf_field(); ?>
+                    <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
+                        <label>Username</label>
+                        <input type="text" name="username" class="form-control" value="<?php echo htmlspecialchars($username); ?>" pattern="[A-Za-z0-9]+" title="Letters and numbers only" required>
+                        <span class="help-block"><?php echo $username_err; ?></span>
                     </div>
-                    <span class="help-block"><?php echo $password_err; ?></span>
-                </div>
-                <div class="form-group <?php echo (!empty($confirm_password_err)) ? 'has-error' : ''; ?> password-toggle-wrapper">
-                    <label>Confirm Password</label>
-                    <div class="password-field icon-variant">
-                        <input id="reg_confirm_password" type="password" name="confirm_password" class="form-control" value="<?php echo htmlspecialchars($confirm_password); ?>" minlength="8" pattern="(?=.*\d).{8,}" title="At least 8 characters with at least one number" required>
-                        <button type="button" class="pw-icon-btn" data-target="reg_confirm_password" aria-label="Show confirm password" aria-pressed="false">
-                            <span class="pw-icon pw-icon-show" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></span>
-                            <span class="pw-icon pw-icon-hide" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 18 18"/><path d="M10.73 5.08A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.15 21.15 0 0 1-1.67 2.68"/><path d="M6.61 6.61A10.94 10.94 0 0 0 1 12s4 8 11 8a10.94 10.94 0 0 0 5.39-1.61"/><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/></svg></span>
-                        </button>
+                    <div class="form-group <?php echo (!empty($email_err)) ? 'has-error' : ''; ?>">
+                        <label>Email</label>
+                        <input type="email" name="email" class="form-control" value="<?php echo htmlspecialchars($email); ?>" required>
+                        <span class="help-block"><?php echo $email_err; ?></span>
                     </div>
-                    <span class="help-block"><?php echo $confirm_password_err; ?></span>
-                </div>
-                <div class="form-group">
-                    <label>Register as</label>
-                    <div>
-                        <label><input type="radio" name="role" value="seeker" <?php echo ($role === 'seeker') ? 'checked' : ''; ?>> Seeker</label>
-                        <label><input type="radio" name="role" value="giver" <?php echo ($role === 'giver') ? 'checked' : ''; ?>> Giver</label>
+                    <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?> password-toggle-wrapper">
+                        <label>Password</label>
+                        <div class="password-field icon-variant">
+                            <input id="reg_password" type="password" name="password" class="form-control" value="<?php echo htmlspecialchars($password); ?>" minlength="8" pattern="(?=.*\d).{8,}" title="At least 8 characters with at least one number" required>
+                            <button type="button" class="pw-icon-btn" data-target="reg_password" aria-label="Show password" aria-pressed="false">
+                                <span class="pw-icon pw-icon-show" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg></span>
+                                <span class="pw-icon pw-icon-hide" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m3 3 18 18" />
+                                        <path d="M10.73 5.08A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.15 21.15 0 0 1-1.67 2.68" />
+                                        <path d="M6.61 6.61A10.94 10.94 0 0 0 1 12s4 8 11 8a10.94 10.94 0 0 0 5.39-1.61" />
+                                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                                    </svg></span>
+                            </button>
+                        </div>
+                        <span class="help-block"><?php echo $password_err; ?></span>
                     </div>
-                </div>
-                <div class="auth-actions">
-                    <button type="submit" class="btn btn-primary btn-shimmer">Create account</button>
-                    <a class="btn btn-outline" href="<?php echo site_href('pages/login.php'); ?>">I have an account</a>
-                </div>
-            </form>
+                    <div class="form-group <?php echo (!empty($confirm_password_err)) ? 'has-error' : ''; ?> password-toggle-wrapper">
+                        <label>Confirm Password</label>
+                        <div class="password-field icon-variant">
+                            <input id="reg_confirm_password" type="password" name="confirm_password" class="form-control" value="<?php echo htmlspecialchars($confirm_password); ?>" minlength="8" pattern="(?=.*\d).{8,}" title="At least 8 characters with at least one number" required>
+                            <button type="button" class="pw-icon-btn" data-target="reg_confirm_password" aria-label="Show confirm password" aria-pressed="false">
+                                <span class="pw-icon pw-icon-show" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg></span>
+                                <span class="pw-icon pw-icon-hide" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m3 3 18 18" />
+                                        <path d="M10.73 5.08A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.15 21.15 0 0 1-1.67 2.68" />
+                                        <path d="M6.61 6.61A10.94 10.94 0 0 0 1 12s4 8 11 8a10.94 10.94 0 0 0 5.39-1.61" />
+                                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                                    </svg></span>
+                            </button>
+                        </div>
+                        <span class="help-block"><?php echo $confirm_password_err; ?></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Register as</label>
+                        <div>
+                            <label><input type="radio" name="role" value="seeker" <?php echo ($role === 'seeker') ? 'checked' : ''; ?>> Seeker</label>
+                            <label><input type="radio" name="role" value="giver" <?php echo ($role === 'giver') ? 'checked' : ''; ?>> Giver</label>
+                        </div>
+                    </div>
+                    <div class="auth-actions">
+                        <button type="submit" class="btn btn-primary btn-shimmer">Create account</button>
+                        <a class="btn btn-outline" href="<?php echo site_href('pages/login.php'); ?>">I have an account</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
-<script>
-(function(){
-  document.querySelectorAll('.pw-icon-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var targetId = btn.getAttribute('data-target');
-      var input = document.getElementById(targetId);
-      if(!input) return;
-      var showing = input.type === 'text';
-      input.type = showing ? 'password' : 'text';
-      btn.setAttribute('aria-pressed', String(!showing));
-      btn.classList.toggle('visible', !showing);
-    });
-  });
-})();
-</script>
+    <script>
+        (function() {
+            document.querySelectorAll('.pw-icon-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var targetId = btn.getAttribute('data-target');
+                    var input = document.getElementById(targetId);
+                    if (!input) return;
+                    var showing = input.type === 'text';
+                    input.type = showing ? 'password' : 'text';
+                    btn.setAttribute('aria-pressed', String(!showing));
+                    btn.classList.toggle('visible', !showing);
+                });
+            });
+        })();
+    </script>
 </body>
+
 </html>

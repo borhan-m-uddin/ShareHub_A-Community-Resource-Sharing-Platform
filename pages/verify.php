@@ -23,7 +23,9 @@ if ($uid <= 0 || $token === '' || !db_connected()) {
                     $ok = true;
                 }
             }
-            if ($resUser) { $resUser->free(); }
+            if ($resUser) {
+                $resUser->free();
+            }
         }
         $stmtUser->close();
     }
@@ -53,7 +55,9 @@ if ($uid <= 0 || $token === '' || !db_connected()) {
                         }
                     }
                 }
-                if ($resTok) { $resTok->free(); }
+                if ($resTok) {
+                    $resTok->free();
+                }
             }
             $stmtTok->close();
         }
@@ -68,27 +72,30 @@ if ($debug && !$ok) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Email Verification</title>
-<link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+    <link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>">
 </head>
+
 <body>
-<?php render_header(); ?>
-<div class="container" style="max-width:640px;margin:40px auto;">
-    <div class="page-top-actions">
-    <a class="btn btn-outline" href="<?php echo site_href('pages/login.php'); ?>">← Back to login</a>
+    <?php render_header(); ?>
+    <div class="container" style="max-width:640px;margin:40px auto;">
+        <div class="page-top-actions">
+            <a class="btn btn-outline" href="<?php echo site_href('pages/login.php'); ?>">← Back to login</a>
+        </div>
+        <h2>Email Verification</h2>
+        <div class="alert <?php echo $ok ? 'alert-success' : 'alert-danger'; ?>"><?php echo e($status); ?></div>
+        <?php if ($ok): ?>
+            <p><a class="btn" href="<?php echo site_href('pages/login.php'); ?>">Go to Login</a></p>
+        <?php else: ?>
+            <p>
+                <a class="btn" href="<?php echo site_href('pages/verify_notice.php?uid=' . htmlspecialchars((string)$uid, ENT_QUOTES, 'UTF-8')); ?>">Request new link</a>
+            </p>
+        <?php endif; ?>
     </div>
-    <h2>Email Verification</h2>
-    <div class="alert <?php echo $ok ? 'alert-success' : 'alert-danger'; ?>"><?php echo e($status); ?></div>
-    <?php if ($ok): ?>
-    <p><a class="btn" href="<?php echo site_href('pages/login.php'); ?>">Go to Login</a></p>
-    <?php else: ?>
-        <p>
-            <a class="btn" href="<?php echo site_href('pages/verify_notice.php?uid=' . htmlspecialchars((string)$uid, ENT_QUOTES, 'UTF-8')); ?>">Request new link</a>
-        </p>
-    <?php endif; ?>
-</div>
 </body>
+
 </html>

@@ -175,7 +175,7 @@ if ($st = $conn->prepare("SELECT r.request_id, r.status, u1.username as requeste
                     <div style="font-size:2rem; font-weight:800; color:var(--primary);"><?php echo $stats['total_users']; ?></div>
                     <div class="muted">Total Users</div>
                     <div style="margin-top:10px;"><?php if (isset($stats['users_by_role'])): foreach ($stats['users_by_role'] as $role => $count): ?><span class="badge badge-<?php echo $role; ?>"><?php echo ucfirst($role); ?>: <?php echo $count; ?></span> <?php endforeach;
-                                                                                                                                                                                                                                                    endif; ?></div>
+                                                                                                                                                                                                                                                        endif; ?></div>
                 </div>
             </div>
             <div class="card">
@@ -183,7 +183,7 @@ if ($st = $conn->prepare("SELECT r.request_id, r.status, u1.username as requeste
                     <div style="font-size:2rem; font-weight:800; color:var(--primary);"><?php echo $stats['total_items']; ?></div>
                     <div class="muted">Total Items</div>
                     <div style="margin-top:10px;"><?php if (isset($stats['items_by_status'])): foreach ($stats['items_by_status'] as $status => $count): ?><span class="badge badge-<?php echo $status; ?>"><?php echo ucfirst($status); ?>: <?php echo $count; ?></span> <?php endforeach;
-                                                                                                                                                                                                                                                                endif; ?></div>
+                                                                                                                                                                                                                                                                    endif; ?></div>
                 </div>
             </div>
             <div class="card">
@@ -197,7 +197,7 @@ if ($st = $conn->prepare("SELECT r.request_id, r.status, u1.username as requeste
                     <div style="font-size:2rem; font-weight:800; color:var(--primary);"><?php echo $stats['total_requests']; ?></div>
                     <div class="muted">Total Requests</div>
                     <div style="margin-top:10px;"><?php if (isset($stats['requests_by_status'])): foreach ($stats['requests_by_status'] as $status => $count): ?><span class="badge badge-<?php echo $status; ?>"><?php echo ucfirst($status); ?>: <?php echo $count; ?></span> <?php endforeach;
-                                                                                                                                                                                                                                                                    endif; ?></div>
+                                                                                                                                                                                                                                                                        endif; ?></div>
                 </div>
             </div>
             <div class="card">
@@ -245,6 +245,6 @@ if ($st = $conn->prepare("SELECT r.request_id, r.status, u1.username as requeste
             </div>
         </div>
 
-        
+
     </div>
     <?php render_footer(); ?>

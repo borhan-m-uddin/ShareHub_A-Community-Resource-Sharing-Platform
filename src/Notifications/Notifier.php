@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Notifications;
 
 class Notifier
@@ -8,7 +9,7 @@ class Notifier
         if ($userId <= 0) return false;
         if (!\function_exists('db_connected') || !db_connected()) return false;
         global $conn;
-        @ $conn->query("CREATE TABLE IF NOT EXISTS notifications (
+        @$conn->query("CREATE TABLE IF NOT EXISTS notifications (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NOT NULL,
             type VARCHAR(40) NOT NULL,
@@ -40,7 +41,9 @@ class Notifier
                                     \App\Mail\Mailer::send($row['email'], $subject, nl2br($body));
                                 }
                             }
-                            if ($res) { $res->free(); }
+                            if ($res) {
+                                $res->free();
+                            }
                         }
                     }
                     $uStmt->close();
@@ -54,7 +57,9 @@ class Notifier
     public static function fetchUnread(int $userId, int $limit = 10): array
     {
         if ($userId <= 0) return [];
-        if (\function_exists('db_reconnect_if_needed')) { db_reconnect_if_needed(); }
+        if (\function_exists('db_reconnect_if_needed')) {
+            db_reconnect_if_needed();
+        }
         if (!\function_exists('db_connected') || !db_connected()) return [];
         global $conn;
         $out = [];
@@ -63,8 +68,12 @@ class Notifier
                 $stmt->bind_param('ii', $userId, $limit);
                 if ($stmt->execute()) {
                     $res = $stmt->get_result();
-                    while ($r = $res->fetch_assoc()) { $out[] = $r; }
-                    if ($res) { $res->free(); }
+                    while ($r = $res->fetch_assoc()) {
+                        $out[] = $r;
+                    }
+                    if ($res) {
+                        $res->free();
+                    }
                 }
                 $stmt->close();
             }
