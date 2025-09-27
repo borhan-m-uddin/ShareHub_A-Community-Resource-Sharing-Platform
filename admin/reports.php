@@ -487,7 +487,7 @@ if ($stmt = $conn->prepare($sql)) {
     <div class="wrapper">
         <div class="page-top-actions">
             <a class="btn btn-primary" href="<?php echo site_href('admin/panel.php'); ?>">← Back to Admin Panel</a>
-            <a class="btn btn-secondary" href="<?php echo site_href('dashboard.php'); ?>">Dashboard</a>
+            <a class="btn btn-secondary" href="<?php echo site_href('pages/dashboard.php'); ?>">Dashboard</a>
         </div>
         <h2>📊 Admin - Reports & Analytics</h2>
 

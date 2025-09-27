@@ -144,7 +144,7 @@ if ($st = $conn->prepare("SELECT r.request_id, r.status, u1.username as requeste
 
     <div class="wrapper">
         <div class="page-top-actions">
-            <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary">← Back to Dashboard</a>
+            <a href="<?php echo site_href('pages/dashboard.php'); ?>" class="btn btn-secondary">← Back to Dashboard</a>
         </div>
         <div class="card">
             <div class="card-body" style="text-align:center;">

@@ -258,6 +258,9 @@ html[data-theme='light'] .list .list-item:hover small,
 html[data-theme='light'] .list .list-item:hover strong {
     color: var(--text);
 }
+html[data-theme='light'] .help-block  {
+    color: var(--danger);
+}
 
 /*
     Global Theme Refresh
@@ -942,7 +945,7 @@ textarea.form-control {
 }
 
 .help-block {
-    color: #b91c1c;
+    color: var(--danger-700);
     font-size: 0.9rem;
     margin-top: 6px;
     display: block;

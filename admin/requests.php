@@ -174,7 +174,7 @@ if ($stmtc = $conn->prepare($sqlCount)) {
     <div class="wrapper">
         <div class="page-top-actions">
             <a href="<?php echo site_href('admin/panel.php'); ?>" class="btn btn-primary">← Back to Admin Panel</a>
-            <a href="<?php echo site_href('dashboard.php'); ?>" class="btn btn-secondary">Dashboard</a>
+            <a href="<?php echo site_href('pages/dashboard.php'); ?>" class="btn btn-secondary">Dashboard</a>
         </div>
         <h2>📋 Admin - Manage Requests</h2>
 
