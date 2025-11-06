@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "buildCommand": "composer install --no-dev --prefer-dist --optimize-autoloader",
+  "functions": {
+    "api/index.php": {
+      "runtime": "vercel-php@0.6.0",
+      "memory": 512,
+      "maxDuration": 10
+    }
+  },
+  "routes": [
+    { "src": "^/(assets/.*)$", "dest": "/$1" },
+    { "src": "^/(uploads/.*)$", "dest": "/$1" },
+    { "src": "^/favicon\\.ico$", "dest": "/favicon.ico" },
+    { "src": "^/style\\.css$", "dest": "/style.css" },
+    { "src": "^(?!/api/).*", "dest": "/api/index.php" }
+  ]
+}
