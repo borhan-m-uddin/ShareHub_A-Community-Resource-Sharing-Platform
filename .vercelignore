@@ -1,0 +1,16 @@
+# Exclude local/editor files from Vercel upload
+.git/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local env files
+.env
+.env.*
+
+# Local logs and cache
+storage/mail.log
+
+# Optional tooling not needed in build
+tools/
