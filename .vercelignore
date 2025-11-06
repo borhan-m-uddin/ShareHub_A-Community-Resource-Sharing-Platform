@@ -14,3 +14,8 @@ storage/mail.log
 
 # Optional tooling not needed in build
 tools/
+
+# Prevent Vercel PHP builder from running Composer
+composer.json
+composer.lock
+
