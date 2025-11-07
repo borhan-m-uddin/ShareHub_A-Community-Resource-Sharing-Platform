@@ -54,7 +54,7 @@ function __serve_static(string $absFile): void
 }
 
 // Allow-list static roots
-if (strpos($path, '/uploads/') === 0 || strpos($path, '/assets/') === 0 || $path === '/style.css' || $path === '/favicon.ico' || $path === '/robots.txt') {
+if (strpos($path, '/uploads/') === 0 || strpos($path, '/assets/') === 0 || strpos($path, '/css/') === 0 || $path === '/style.css' || $path === '/favicon.ico' || $path === '/robots.txt') {
 	$candidate = $root . ltrim($path, '/');
 	// Never serve php files
 	if (is_file($candidate) && stripos($candidate, '.php') === false) {

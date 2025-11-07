@@ -123,7 +123,19 @@
 	<button id="sidebarFab" class="btn btn-outline" aria-controls="seekerSidebarGlobal" aria-expanded="false" title="Open menu">☰ Menu</button>
 <?php endif; ?>
 <main class="main-content">
-	<?php if (function_exists('db_connected') && !db_connected()): ?>
+	<?php
+	// Only show the big DB offline banner when debugging is enabled
+	$appDebug = getenv('APP_DEBUG');
+	$showDebug = false;
+	if ($appDebug !== false && $appDebug !== null) {
+		$val = strtolower(trim((string)$appDebug));
+		$showDebug = in_array($val, ['1','true','yes','on'], true);
+	} elseif (($tmp = getenv('SHOW_DB_DEBUG')) !== false && $tmp !== null) {
+		$val = strtolower(trim((string)$tmp));
+		$showDebug = in_array($val, ['1','true','yes','on'], true);
+	}
+	?>
+	<?php if ($showDebug && function_exists('db_connected') && !db_connected()): ?>
 		<div class="wrapper" style="border:1px solid #fecaca;background:#fff1f2;color:#991b1b;">
 			<div class="alert alert-danger" style="margin:0;">
 				Database connection is offline. Pages may be limited until the DB is available.
@@ -134,6 +146,11 @@
 				<?php endif; ?>
 				<div style="margin-top:4px;font-size:11px;opacity:.7;">(Temporary debug info; remove for production.)</div>
 			</div>
+		</div>
+	<?php elseif (function_exists('db_connected') && !db_connected()): ?>
+		<!-- Subtle non-blocking indicator when DB is offline in production -->
+		<div class="wrapper" style="border:1px solid rgba(254,202,202,.5);background:rgba(255,241,242,.4);color:#991b1b;padding:6px 10px;">
+			<small>Database currently offline. Some features may be unavailable.</small>
 		</div>
 	<?php endif; ?>
 	<script>
