@@ -28,8 +28,75 @@ if (!defined('ROOT_DIR')) {
     define('ROOT_DIR', __DIR__);
 }
 
-// Ensure config is loaded (always include once)
-require_once __DIR__ . '/config.php';
+// Ensure config is loaded (always include once). Fallback inline if file missing (serverless packaging case).
+if (file_exists(__DIR__ . '/config.php')) {
+    require_once __DIR__ . '/config.php';
+} else {
+    // Inline copy from config.php (fallback when config.php not bundled)
+    if (!defined('DB_SERVER'))    define('DB_SERVER', getenv('DB_SERVER') ?: getenv('DB_HOST') ?: '127.0.0.1');
+    if (!defined('DB_USERNAME'))  define('DB_USERNAME', getenv('DB_USERNAME') ?: getenv('DB_USER') ?: 'root');
+    if (!defined('DB_PASSWORD'))  define('DB_PASSWORD', getenv('DB_PASSWORD') ?: '');
+    if (!defined('DB_NAME'))      define('DB_NAME', getenv('DB_NAME') ?: 'community_sharing');
+    if (!defined('DB_PORT'))      define('DB_PORT', (int)(getenv('DB_PORT') ?: 3306));
+
+    mysqli_report(MYSQLI_REPORT_OFF);
+    $conn = @new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
+    if ($conn && !$conn->connect_errno) {
+        @mysqli_set_charset($conn, 'utf8mb4');
+        $GLOBALS['DB_OFFLINE'] = false;
+    } else {
+        $GLOBALS['DB_OFFLINE'] = true;
+    }
+
+    if (!function_exists('db_connected')) {
+        function db_connected(): bool
+        {
+            if (isset($GLOBALS['DB_OFFLINE']) && $GLOBALS['DB_OFFLINE'] === true) {
+                return false;
+            }
+            if (!isset($GLOBALS['conn']) || !$GLOBALS['conn'] instanceof mysqli) return false;
+            $c = $GLOBALS['conn'];
+            if ($c->connect_errno !== 0) return false;
+            static $lastProbeOk = true;
+            static $lastProbeAt = 0;
+            $now = time();
+            if (($now - $lastProbeAt) < 5) {
+                return $lastProbeOk;
+            }
+            $lastProbeAt = $now;
+            $probeOk = false;
+            try {
+                if (@$c->query('SELECT 1')) {
+                    $probeOk = true;
+                }
+            } catch (Throwable $e) {
+                $probeOk = false;
+            }
+            if (!$probeOk) {
+                return ($lastProbeOk = false);
+            }
+            return ($lastProbeOk = true);
+        }
+    }
+
+    if (!function_exists('db_reconnect_if_needed')) {
+        function db_reconnect_if_needed(): bool
+        {
+            if (db_connected()) return true;
+            try {
+                $GLOBALS['conn'] = @new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
+                if ($GLOBALS['conn'] && !$GLOBALS['conn']->connect_errno) {
+                    @mysqli_set_charset($GLOBALS['conn'], 'utf8mb4');
+                    $GLOBALS['DB_OFFLINE'] = false;
+                    return true;
+                }
+            } catch (Throwable $e) {
+            }
+            $GLOBALS['DB_OFFLINE'] = true;
+            return false;
+        }
+    }
+}
 
 // Composer autoload
 $__autoload = __DIR__ . '/vendor/autoload.php';
