@@ -33,10 +33,10 @@ if (file_exists(__DIR__ . '/config.php')) {
     require_once __DIR__ . '/config.php';
 } else {
     // Inline copy from config.php (fallback when config.php not bundled)
-    if (!defined('DB_SERVER'))    define('DB_SERVER', getenv('DB_SERVER') ?: getenv('DB_HOST') ?: '127.0.0.1');
-    if (!defined('DB_USERNAME'))  define('DB_USERNAME', getenv('DB_USERNAME') ?: getenv('DB_USER') ?: 'root');
-    if (!defined('DB_PASSWORD'))  define('DB_PASSWORD', getenv('DB_PASSWORD') ?: '');
-    if (!defined('DB_NAME'))      define('DB_NAME', getenv('DB_NAME') ?: 'community_sharing');
+    if (!defined('DB_SERVER'))    define('DB_SERVER', getenv('DB_SERVER') ?: getenv('DB_HOST') ?: 'sql12.freesqldatabase.com');
+    if (!defined('DB_USERNAME'))  define('DB_USERNAME', getenv('DB_USERNAME') ?: getenv('DB_USER') ?: 'sql12806539');
+    if (!defined('DB_PASSWORD'))  define('DB_PASSWORD', getenv('DB_PASSWORD') ?: 'KNCeSirxeR');
+    if (!defined('DB_NAME'))      define('DB_NAME', getenv('DB_NAME') ?: 'sql12806539');
     if (!defined('DB_PORT'))      define('DB_PORT', (int)(getenv('DB_PORT') ?: 3306));
 
     mysqli_report(MYSQLI_REPORT_OFF);
