@@ -93,7 +93,14 @@ if (!function_exists('e')) {
 if (!function_exists('asset_url')) {
     function asset_url(string $path): string
     {
-        return '/' . ltrim($path, '/');
+        $clean = ltrim($path, '/');
+        // Backward compatibility: if style.css moved under public/css/, rewrite automatically
+        if ($clean === 'style.css' && defined('ROOT_DIR')) {
+            if (!is_file(ROOT_DIR . '/style.css') && is_file(ROOT_DIR . '/public/css/style.css')) {
+                return '/css/style.css';
+            }
+        }
+        return '/' . $clean;
     }
 }
 // Normalize image URL from DB (absolute URL, site-absolute, or stored relative like uploads/items/..)

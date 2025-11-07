@@ -13,6 +13,7 @@
     { "src": "^/(uploads/.*)$", "dest": "/$1" },
     { "src": "^/favicon\\.ico$", "dest": "/favicon.ico" },
     { "src": "^/style\\.css$", "dest": "/style.css" },
+    { "src": "^/css/style\\.css$", "dest": "/css/style.css" },
     { "src": "^(?!/api/).*", "dest": "/api/index.php" }
   ]
 }
