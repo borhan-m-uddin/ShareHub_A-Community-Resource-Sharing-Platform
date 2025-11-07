@@ -44,8 +44,10 @@ if (file_exists(__DIR__ . '/config.php')) {
     if ($conn && !$conn->connect_errno) {
         @mysqli_set_charset($conn, 'utf8mb4');
         $GLOBALS['DB_OFFLINE'] = false;
+        $GLOBALS['DB_ERROR'] = null;
     } else {
         $GLOBALS['DB_OFFLINE'] = true;
+        $GLOBALS['DB_ERROR'] = ($conn instanceof mysqli) ? $conn->connect_error : 'mysqli not initialized';
     }
 
     if (!function_exists('db_connected')) {
