@@ -127,6 +127,12 @@
 		<div class="wrapper" style="border:1px solid #fecaca;background:#fff1f2;color:#991b1b;">
 			<div class="alert alert-danger" style="margin:0;">
 				Database connection is offline. Pages may be limited until the DB is available.
+				<?php if (isset($GLOBALS['DB_ERROR']) && $GLOBALS['DB_ERROR']): ?>
+					<div style="margin-top:4px;font-size:12px;opacity:.85;">
+						Error: <?php echo htmlspecialchars(substr($GLOBALS['DB_ERROR'],0,180), ENT_QUOTES, 'UTF-8'); ?>
+					</div>
+				<?php endif; ?>
+				<div style="margin-top:4px;font-size:11px;opacity:.7;">(Temporary debug info; remove for production.)</div>
 			</div>
 		</div>
 	<?php endif; ?>
