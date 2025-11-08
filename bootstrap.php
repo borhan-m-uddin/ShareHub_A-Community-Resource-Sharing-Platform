@@ -41,6 +41,7 @@ if (file_exists(__DIR__ . '/config.php')) {
 
     mysqli_report(MYSQLI_REPORT_OFF);
     $conn = @new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
+    $GLOBALS['conn'] = $conn; // make accessible globally
     if ($conn && !$conn->connect_errno) {
         @mysqli_set_charset($conn, 'utf8mb4');
         $GLOBALS['DB_OFFLINE'] = false;
