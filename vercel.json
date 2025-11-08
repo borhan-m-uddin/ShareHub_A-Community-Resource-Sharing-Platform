@@ -14,7 +14,7 @@
     { "src": "^/(assets/.*)$", "dest": "/$1" },
     { "src": "^/(uploads/.*)$", "dest": "/$1" },
     { "src": "^/favicon\\.ico$", "dest": "/favicon.ico" },
-    { "src": "^/marketing\\.css$", "dest": "/assets/marketing.css" },
+    { "src": "^/marketing\\.css$", "dest": "/assets/css/marketing.css" },
     { "src": "^/css/style\\.css$", "dest": "/css/style.css" },
     { "src": "^(?!/api/).*", "dest": "/api/index.php" }
   ]
