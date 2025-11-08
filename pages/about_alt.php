@@ -127,7 +127,7 @@ if (function_exists('db_connected') && db_connected()) {
   <meta charset="utf-8" />
   <title>ShareHub – Community Sharing Platform</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!--<link rel="stylesheet" href="<?php echo asset_url('style.css'); ?>" />-->
+  <!-- Global style intentionally excluded: use only marketing.css for this landing page -->
   <link rel="stylesheet" href="<?php echo asset_url('assets/css/marketing.css'); ?>" />
   <?php include ROOT_DIR . '/partials/head_meta.php'; ?>
   <script>
