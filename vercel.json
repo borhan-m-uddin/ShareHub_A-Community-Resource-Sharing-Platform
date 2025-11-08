@@ -11,8 +11,10 @@
   "routes": [
     { "src": "^/(assets/.*)$", "dest": "/$1" },
     { "src": "^/(uploads/.*)$", "dest": "/$1" },
+    { "src": "^/(assets/.*)$", "dest": "/$1" },
+    { "src": "^/(uploads/.*)$", "dest": "/$1" },
     { "src": "^/favicon\\.ico$", "dest": "/favicon.ico" },
-    { "src": "^/style\\.css$", "dest": "/marketing.css" },
+  { "src": "^/style\\.css$", "dest": "/css/style.css" },
     { "src": "^/css/style\\.css$", "dest": "/css/style.css" },
     { "src": "^(?!/api/).*", "dest": "/api/index.php" }
   ]
