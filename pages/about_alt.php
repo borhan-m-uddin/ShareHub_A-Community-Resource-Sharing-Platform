@@ -128,7 +128,28 @@ if (function_exists('db_connected') && db_connected()) {
   <title>ShareHub – Community Sharing Platform</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <!-- Global style intentionally excluded: use only marketing.css for this landing page -->
-  <link rel="stylesheet" href="<?php echo asset_url('assets/css/marketing.css'); ?>" />
+  <!-- Prefer root alias /marketing.css so Vercel route always serves the file; add cache-bust to avoid stale CDN -->
+  <link rel="stylesheet" href="<?php echo asset_url('marketing.css'); ?>?v=<?php echo substr(md5(__FILE__.filemtime(ROOT_DIR.'/assets/css/marketing.css')),0,8); ?>" />
+  <script>
+    // Fallback: if styles fail to apply (e.g., route issue), try loading from /assets/css/marketing.css
+    (function(){
+      try{
+        var probe = document.createElement('span');
+        probe.className = 'pill';
+        probe.style.position='absolute';
+        probe.style.visibility='hidden';
+        document.documentElement.appendChild(probe);
+        var applied = getComputedStyle(probe).borderRadius;
+        document.documentElement.removeChild(probe);
+        if(!applied || applied === '0px'){
+          var alt = document.createElement('link');
+          alt.rel = 'stylesheet';
+          alt.href = '<?php echo asset_url('assets/css/marketing.css'); ?>?alt=1';
+          document.head.appendChild(alt);
+        }
+      }catch(e){}
+    })();
+  </script>
   <?php include ROOT_DIR . '/partials/head_meta.php'; ?>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
