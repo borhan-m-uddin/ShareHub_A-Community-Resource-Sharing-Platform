@@ -129,25 +129,38 @@ if (function_exists('db_connected') && db_connected()) {
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <!-- Global style intentionally excluded: use only marketing.css for this landing page -->
   <!-- Prefer root alias /marketing.css so Vercel route always serves the file; add cache-bust to avoid stale CDN -->
-  <link rel="stylesheet" href="<?php echo asset_url('marketing.css'); ?>?v=<?php echo substr(md5(__FILE__.filemtime(ROOT_DIR.'/assets/css/marketing.css')),0,8); ?>" />
+  <!-- Primary stylesheet (no cache-bust while diagnosing route matching) -->
+  <link rel="stylesheet" href="<?php echo asset_url('assets/css/marketing.css'); ?>" />
+  <!-- Direct path fallback to physical file -->
+  <link rel="stylesheet" href="<?php echo asset_url('assets/css/marketing.css'); ?>" media="print" onload="this.media='all'" />
   <script>
-    // Fallback: if styles fail to apply (e.g., route issue), try loading from /assets/css/marketing.css
+    // Diagnostics: report whether marketing.css classes applied; if not, force inject physical path.
     (function(){
-      try{
-        var probe = document.createElement('span');
-        probe.className = 'pill';
-        probe.style.position='absolute';
-        probe.style.visibility='hidden';
-        document.documentElement.appendChild(probe);
-        var applied = getComputedStyle(probe).borderRadius;
-        document.documentElement.removeChild(probe);
-        if(!applied || applied === '0px'){
-          var alt = document.createElement('link');
-          alt.rel = 'stylesheet';
-          alt.href = '<?php echo asset_url('assets/css/marketing.css'); ?>?alt=1';
-          document.head.appendChild(alt);
-        }
-      }catch(e){}
+      function hasStyles(){
+        var test=document.createElement('div');
+        test.className='pill';
+        test.style.position='absolute';test.style.visibility='hidden';
+        document.documentElement.appendChild(test);
+        var br=getComputedStyle(test).borderRadius;
+        document.documentElement.removeChild(test);
+        return br && br!=='0px';
+      }
+      if(!hasStyles()) {
+        console.warn('[landing] marketing.css not applied; injecting fallback');
+        var l=document.createElement('link');
+        l.rel='stylesheet';
+        l.href='<?php echo asset_url('assets/css/marketing.css'); ?>?force=1';
+        document.head.appendChild(l);
+        setTimeout(function(){
+          if(!hasStyles()) {
+            console.error('[landing] Fallback stylesheet still not applied');
+          } else {
+            console.log('[landing] Fallback stylesheet applied successfully');
+          }
+        },800);
+      } else {
+        console.log('[landing] marketing.css applied');
+      }
     })();
   </script>
   <?php include ROOT_DIR . '/partials/head_meta.php'; ?>
