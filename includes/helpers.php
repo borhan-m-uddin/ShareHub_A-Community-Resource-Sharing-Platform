@@ -191,3 +191,10 @@ if (!function_exists('render_footer')) {
         }
     }
 }
+// Unified database accessor for pages that may not have local $conn in scope
+if (!function_exists('db_handle')) {
+    function db_handle(): ?mysqli {
+        if (isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli) return $GLOBALS['conn'];
+        return null;
+    }
+}

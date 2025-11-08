@@ -1,6 +1,15 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
 require_admin();
+// Normalize global DB handle so $conn exists
+global $conn;
+if (!($conn instanceof mysqli) && isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli) {
+    $conn = $GLOBALS['conn'];
+}
+// Defensive guard: if DB not connected, skip queries to avoid fatal errors
+if (!function_exists('db_connected') || !db_connected()) {
+    $conn = null; // ensure we don't attempt prepare()
+}
 
 // Get platform statistics
 $stats = [
@@ -15,7 +24,7 @@ $stats = [
     'average_rating' => 0.0,
 ];
 
-if ($st = $conn->prepare("SELECT COUNT(*) as total FROM users")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT COUNT(*) as total FROM users"))) {
     $st->execute();
     $res = $st->get_result();
     $stats['total_users'] = (int)($res->fetch_assoc()['total'] ?? 0);
@@ -23,7 +32,7 @@ if ($st = $conn->prepare("SELECT COUNT(*) as total FROM users")) {
     $st->close();
 }
 
-if ($st = $conn->prepare("SELECT role, COUNT(*) as count FROM users GROUP BY role")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT role, COUNT(*) as count FROM users GROUP BY role"))) {
     $st->execute();
     if ($res = $st->get_result()) {
         while ($row = $res->fetch_assoc()) {
@@ -34,7 +43,7 @@ if ($st = $conn->prepare("SELECT role, COUNT(*) as count FROM users GROUP BY rol
     $st->close();
 }
 
-if ($st = $conn->prepare("SELECT COUNT(*) as total FROM items")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT COUNT(*) as total FROM items"))) {
     $st->execute();
     $res = $st->get_result();
     $stats['total_items'] = (int)($res->fetch_assoc()['total'] ?? 0);
@@ -42,7 +51,7 @@ if ($st = $conn->prepare("SELECT COUNT(*) as total FROM items")) {
     $st->close();
 }
 
-if ($st = $conn->prepare("SELECT availability_status, COUNT(*) as count FROM items GROUP BY availability_status")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT availability_status, COUNT(*) as count FROM items GROUP BY availability_status"))) {
     $st->execute();
     if ($res = $st->get_result()) {
         while ($row = $res->fetch_assoc()) {
@@ -53,7 +62,7 @@ if ($st = $conn->prepare("SELECT availability_status, COUNT(*) as count FROM ite
     $st->close();
 }
 
-if ($st = $conn->prepare("SELECT COUNT(*) as total FROM services")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT COUNT(*) as total FROM services"))) {
     $st->execute();
     $res = $st->get_result();
     $stats['total_services'] = (int)($res->fetch_assoc()['total'] ?? 0);
@@ -61,7 +70,7 @@ if ($st = $conn->prepare("SELECT COUNT(*) as total FROM services")) {
     $st->close();
 }
 
-if ($st = $conn->prepare("SELECT COUNT(*) as total FROM requests")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT COUNT(*) as total FROM requests"))) {
     $st->execute();
     $res = $st->get_result();
     $stats['total_requests'] = (int)($res->fetch_assoc()['total'] ?? 0);
@@ -69,7 +78,7 @@ if ($st = $conn->prepare("SELECT COUNT(*) as total FROM requests")) {
     $st->close();
 }
 
-if ($st = $conn->prepare("SELECT status, COUNT(*) as count FROM requests GROUP BY status")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT status, COUNT(*) as count FROM requests GROUP BY status"))) {
     $st->execute();
     if ($res = $st->get_result()) {
         while ($row = $res->fetch_assoc()) {
@@ -80,7 +89,7 @@ if ($st = $conn->prepare("SELECT status, COUNT(*) as count FROM requests GROUP B
     $st->close();
 }
 
-if ($st = $conn->prepare("SELECT COUNT(*) as total FROM reviews")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT COUNT(*) as total FROM reviews"))) {
     $st->execute();
     $res = $st->get_result();
     $stats['total_reviews'] = (int)($res->fetch_assoc()['total'] ?? 0);
@@ -88,7 +97,7 @@ if ($st = $conn->prepare("SELECT COUNT(*) as total FROM reviews")) {
     $st->close();
 }
 
-if ($st = $conn->prepare("SELECT AVG(rating) as avg_rating FROM reviews")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT AVG(rating) as avg_rating FROM reviews"))) {
     $st->execute();
     $res = $st->get_result();
     $avg = (float)($res->fetch_assoc()['avg_rating'] ?? 0);
@@ -100,7 +109,7 @@ if ($st = $conn->prepare("SELECT AVG(rating) as avg_rating FROM reviews")) {
 $recent_users = [];
 $recent_items = [];
 $recent_requests = [];
-if ($st = $conn->prepare("SELECT user_id, username, email, role, registration_date FROM users ORDER BY registration_date DESC LIMIT 5")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT user_id, username, email, role, registration_date FROM users ORDER BY registration_date DESC LIMIT 5"))) {
     if ($st->execute() && ($res = $st->get_result())) {
         while ($r = $res->fetch_assoc()) {
             $recent_users[] = $r;
@@ -109,7 +118,7 @@ if ($st = $conn->prepare("SELECT user_id, username, email, role, registration_da
     }
     $st->close();
 }
-if ($st = $conn->prepare("SELECT i.item_id, i.title, u.username as giver, i.posting_date FROM items i JOIN users u ON i.giver_id = u.user_id ORDER BY i.posting_date DESC LIMIT 5")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT i.item_id, i.title, u.username as giver, i.posting_date FROM items i JOIN users u ON i.giver_id = u.user_id ORDER BY i.posting_date DESC LIMIT 5"))) {
     if ($st->execute() && ($res = $st->get_result())) {
         while ($r = $res->fetch_assoc()) {
             $recent_items[] = $r;
@@ -118,7 +127,7 @@ if ($st = $conn->prepare("SELECT i.item_id, i.title, u.username as giver, i.post
     }
     $st->close();
 }
-if ($st = $conn->prepare("SELECT r.request_id, r.status, u1.username as requester, u2.username as giver, r.request_date FROM requests r JOIN users u1 ON r.requester_id = u1.user_id LEFT JOIN users u2 ON r.giver_id = u2.user_id ORDER BY r.request_date DESC LIMIT 5")) {
+if ($conn instanceof mysqli && ($st = $conn->prepare("SELECT r.request_id, r.status, u1.username as requester, u2.username as giver, r.request_date FROM requests r JOIN users u1 ON r.requester_id = u1.user_id LEFT JOIN users u2 ON r.giver_id = u2.user_id ORDER BY r.request_date DESC LIMIT 5"))) {
     if ($st->execute() && ($res = $st->get_result())) {
         while ($r = $res->fetch_assoc()) {
             $recent_requests[] = $r;

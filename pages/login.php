@@ -1,9 +1,7 @@
 <?php require_once __DIR__ . '/../bootstrap.php';
 // Normalize DB handle regardless of bootstrap/config initialization mode
 global $conn;
-if (!isset($conn) && isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli) {
-    $conn = $GLOBALS['conn'];
-}
+$conn = $conn instanceof mysqli ? $conn : db_handle();
 // Moved original login implementation here from project root.
 if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
     header("location: " . site_href('pages/dashboard.php'));
@@ -39,7 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if (!$login_err && function_exists('db_connected') && !db_connected()) {
                 $login_err = "Service temporarily unavailable. Please try again.";
             }
-            $db = $conn ?? ($GLOBALS['conn'] ?? null);
+            $db = db_handle();
             if (!$login_err && $db instanceof mysqli && $stmt = $db->prepare($sql)) {
                 $stmt->bind_param('s', $username);
                 if ($stmt->execute()) {

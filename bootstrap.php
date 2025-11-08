@@ -119,4 +119,9 @@ require_once __DIR__ . '/includes/items.php';
 require_once __DIR__ . '/includes/services.php';
 require_once __DIR__ . '/includes/requests.php';
 
+// Finalize: always expose $conn via $GLOBALS and a local alias for included scripts
+if (isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli) {
+    $conn = $GLOBALS['conn'];
+}
+
 // End bootstrap (remaining wrappers moved to includes)
