@@ -1,8 +1,76 @@
 /* Marketing / landing page extracted styles */
-.alt-wrapper {
-    padding: 0;
-    margin: 0;
+/* Minimal independent design system so landing page can exclude global style.css */
+/* Theme variables (light defaults) */
+:root {
+    --bg: #eef7f4;
+    --card: #ffffff;
+    --text: #0e2730;
+    --muted: #4c6b73;
+    --border: #d7e6e1;
+    --shadow: 0 6px 20px rgba(5, 41, 45, 0.06);
+    --primary: #0fa3a8;
+    --primary-600: #0b7f83;
+    --success: #22c55e;
+    --info: #4ca7c9;
+    --laser: #23d3b3;
 }
+html[data-theme='dark'] {
+    --bg: #0a0f1e;
+    --card: #0f1b2d;
+    --text: #e8f2ff;
+    --muted: #88a1c3;
+    --border: #1a2b45;
+    --shadow: 0 6px 20px rgba(0,0,0,.55);
+    --primary: #4fd1d9;
+    --primary-600: #2a8e93;
+    --success: #22c55e;
+    --info: #9adcf2;
+    --laser: #ff527a;
+}
+body {
+    margin:0;
+    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+a { color: var(--primary); text-decoration:none; }
+a:hover { text-decoration:underline; }
+/* Header + nav minimal styling */
+.site-header { background: var(--card); border-bottom:1px solid var(--border); box-shadow:0 2px 6px rgba(0,0,0,.04); }
+html[data-theme='dark'] .site-header { background: rgba(10,15,30,.9); }
+.site-header .container { max-width:1200px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:20px; }
+.site-header .brand img { height:40px; display:block; }
+.site-nav { display:flex; align-items:center; gap:14px; }
+.site-nav a { padding:8px 10px; border-radius:8px; font-weight:600; color: var(--text); }
+.site-nav a:hover { background: rgba(15,163,168,.12); }
+html[data-theme='dark'] .site-nav a:hover { background:#1a2b45; }
+.nav-toggle { display:none; background:transparent; border:0; font-size:24px; cursor:pointer; }
+@media (max-width:900px){
+  .nav-toggle { display:inline-block; }
+  .site-nav { position: absolute; top:62px; left:0; right:0; background:var(--card); flex-direction:column; padding:16px 20px; border-bottom:1px solid var(--border); display:none; }
+  .site-nav.open { display:flex; }
+}
+/* Button primitives (subset) */
+.btn { display:inline-block; padding:10px 16px; border-radius:10px; font-weight:700; border:0; cursor:pointer; transition:background .2s ease, transform .08s ease; }
+.btn:hover { transform:translateY(-1px); }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-600); }
+.btn-default { background:#f3f4f6; color:#111827; border:1px solid var(--border); }
+html[data-theme='dark'] .btn-default { background:#111827; color:#e5e7eb; border-color:#1f2937; }
+.btn-default:hover { background:#e5e7eb; }
+html[data-theme='dark'] .btn-default:hover { background:#1f2937; }
+.btn-outline { background:transparent; color:var(--primary); border:2px solid var(--primary); }
+.btn-outline:hover { background:var(--primary); color:#fff; }
+.btn-success { background:var(--success); color:#fff; }
+.btn-success:hover { filter:brightness(.92); }
+.btn-info { background:var(--info); color:#fff; }
+.btn-info.btn-outline { background:transparent; color:var(--info); border:2px solid var(--info); }
+.btn-info.btn-outline:hover { background:var(--info); color:#fff; }
+.count-badge { background:#d1242f; color:#fff; font-size:11px; padding:2px 6px; border-radius:12px; margin-left:6px; }
+.main-content { max-width:1200px; margin:0 auto; padding:0 20px; }
+.alt-wrapper { padding: 0; margin: 0; }
 
 .alt-hero {
     padding: 40px 0 10px;
@@ -195,8 +263,8 @@ html[data-theme='dark'] .tag {
 .how {
     margin-top: 28px;
 }
-
-how-steps {
+/* Fix selector: was missing dot */
+.how-steps {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 16px;
