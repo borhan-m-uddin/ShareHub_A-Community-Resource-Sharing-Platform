@@ -1,14 +1,25 @@
-name: Deploy to InfinityFree via FTP
+name: Deploy ShareHub to InfinityFree via FTP
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'index.html'
-      - 'admin.html'
-      - 'project.html'
-      - 'assets/**'
+      # Include all ShareHub project files
+      - 'public/**'
+      - 'app/**'
+      - 'src/**'
+      - 'includes/**'
+      - 'config/**'
+      - 'views/**'
+      - 'routes/**'
+      - 'database/**'
+      - 'uploads/**'
+      - 'vendor/**'
+      - '.env'
       - '.htaccess'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'index.php'
       - 'robots.txt'
   workflow_dispatch:
 
@@ -24,27 +35,58 @@ jobs:
       - name: Deploy via FTP (InfinityFree)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          # Fixed InfinityFree host from your account details
+          # InfinityFree FTP server (same for all accounts)
           server: ftpupload.net
-          # Store these as GitHub Secrets (Settings > Secrets > Actions)
-          # FTP_USERNAME -> if0_40373864
-          # FTP_PASSWORD -> (your password, do NOT commit it here)
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          
+          # GitHub Secrets (Set these in Settings > Secrets and variables > Actions)
+          # username: ${{ secrets.FTP_USERNAME }}
+          # password: ${{ secrets.FTP_PASSWORD }}
+          
+          # FTPS protocol for secure connection
           protocol: ftps
           port: 21
+          
+          # Upload entire project
           local-dir: ./
-          # InfinityFree set your domain's document root to /burhanuddin.tech/htdocs/
-          server-dir: /burhanuddin.tech/htdocs/
-          # Passive deploy exclude list
+          
+          # Remote directory for your subdomain
+          server-dir: /sharahub.great-site.net/htdocs/
+          
+          # Files and folders to exclude from upload
           exclude: |
             **/.git/**
             **/.git*
             **/.github/**
             **/node_modules/**
+            **/vendor/**
             **/*.map
-            README.md
-            supabase/**
+            **/.env.example
+            **/.gitignore
+            **/README.md
+            **/composer.json
+            **/composer.lock
+            **/package.json
+            **/package-lock.json
+            **/phpunit.xml
+            **/.phpunit.result.cache
+            **/tests/**
+            **/docs/**
+            **/*.sql
+            **/.editorconfig
+            **/.vscode/**
+            **/.idea/**
+            **/Thumbs.db
+            **/.DS_Store
+            **/*.log
+            **/storage/framework/cache/**
+            **/storage/framework/sessions/**
+            **/storage/framework/views/**
+            **/storage/logs/**
+            
           log-level: standard
-          # Optional: fail build if more than 200 changes (safety net)
+          
+          # Don't delete files on server (safe for production)
           dangerous-clean-slate: false
+          
+          # Use passive mode (recommended for InfinityFree)
+          passive: true
