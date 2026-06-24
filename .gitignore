@@ -12,7 +12,7 @@ node_modules/
 # Composer dependencies
 # Recommended: do NOT commit vendor/ when your server can run Composer.
 # If your server cannot run Composer, remove this rule and commit vendor/.
-vendor/
+# vendor/
 
 # PHP sessions / temp / caches
 sessions/
