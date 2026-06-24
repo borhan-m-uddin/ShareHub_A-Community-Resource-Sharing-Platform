@@ -3,24 +3,6 @@ name: Deploy ShareHub to InfinityFree via FTP
 on:
   push:
     branches: [ main ]
-    paths:
-      # Include all ShareHub project files
-      - 'public/**'
-      - 'app/**'
-      - 'src/**'
-      - 'includes/**'
-      - 'config/**'
-      - 'views/**'
-      - 'routes/**'
-      - 'database/**'
-      - 'uploads/**'
-      - 'vendor/**'
-      - '.env'
-      - '.htaccess'
-      - 'composer.json'
-      - 'composer.lock'
-      - 'index.php'
-      - 'robots.txt'
   workflow_dispatch:
 
 jobs:
@@ -32,61 +14,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader
+
       - name: Deploy via FTP (InfinityFree)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          # InfinityFree FTP server (same for all accounts)
           server: ftpupload.net
-          
-          # GitHub Secrets (Set these in Settings > Secrets and variables > Actions)
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          
-          # FTPS protocol for secure connection
           protocol: ftps
           port: 21
-          
-          # Upload entire project
           local-dir: ./
-          
-          # Remote directory for your subdomain
           server-dir: /sharahub.great-site.net/htdocs/
-          
-          # Files and folders to exclude from upload
           exclude: |
             **/.git/**
             **/.git*
             **/.github/**
-            **/node_modules/**
-            **/vendor/**
-            **/*.map
-            **/.env.example
-            **/.gitignore
-            **/README.md
-            **/composer.json
-            **/composer.lock
-            **/package.json
-            **/package-lock.json
-            **/phpunit.xml
-            **/.phpunit.result.cache
             **/tests/**
             **/docs/**
             **/*.sql
-            **/.editorconfig
-            **/.vscode/**
-            **/.idea/**
-            **/Thumbs.db
-            **/.DS_Store
-            **/*.log
-            **/storage/framework/cache/**
-            **/storage/framework/sessions/**
-            **/storage/framework/views/**
-            **/storage/logs/**
-            
+            .env.example
+            README.md
           log-level: standard
-          
-          # Don't delete files on server (safe for production)
           dangerous-clean-slate: false
-          
-          # Use passive mode (recommended for InfinityFree)
           passive: true
