@@ -39,8 +39,8 @@ jobs:
           server: ftpupload.net
           
           # GitHub Secrets (Set these in Settings > Secrets and variables > Actions)
-          # username: ${{ secrets.FTP_USERNAME }}
-          # password: ${{ secrets.FTP_PASSWORD }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
           
           # FTPS protocol for secure connection
           protocol: ftps
