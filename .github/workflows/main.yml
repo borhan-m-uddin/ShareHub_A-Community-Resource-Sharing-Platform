@@ -1,0 +1,50 @@
+name: Deploy to InfinityFree via FTP
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'index.html'
+      - 'admin.html'
+      - 'project.html'
+      - 'assets/**'
+      - '.htaccess'
+      - 'robots.txt'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy via FTP (InfinityFree)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          # Fixed InfinityFree host from your account details
+          server: ftpupload.net
+          # Store these as GitHub Secrets (Settings > Secrets > Actions)
+          # FTP_USERNAME -> if0_40373864
+          # FTP_PASSWORD -> (your password, do NOT commit it here)
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          local-dir: ./
+          # InfinityFree set your domain's document root to /burhanuddin.tech/htdocs/
+          server-dir: /burhanuddin.tech/htdocs/
+          # Passive deploy exclude list
+          exclude: |
+            **/.git/**
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/*.map
+            README.md
+            supabase/**
+          log-level: standard
+          # Optional: fail build if more than 200 changes (safety net)
+          dangerous-clean-slate: false
